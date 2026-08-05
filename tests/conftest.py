@@ -28,6 +28,7 @@ def fixture_engine():
     SQLModel.metadata.create_all(engine)
     yield engine
     SQLModel.metadata.drop_all(engine)
+    engine.dispose()
     # Clean up SQLite file if used
     if "sqlite" in test_url and os.path.exists("./test.db"):
         os.remove("./test.db")

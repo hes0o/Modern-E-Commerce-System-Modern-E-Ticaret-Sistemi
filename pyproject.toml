@@ -28,6 +28,10 @@ pythonpath = ["."]
 target-version = "py311"
 line-length = 100
 
+[tool.setuptools.packages.find]
+include = ["app*"]
+exclude = ["tests*", "backend*"]
+
 [build-system]
 requires = ["setuptools>=75.0"]
-build-backend = "setuptools.backends._legacy:_Backend"
+build-backend = "setuptools.build_meta"
