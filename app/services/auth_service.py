@@ -1,0 +1,133 @@
+from datetime import UTC, datetime
+
+from sqlalchemy.exc import IntegrityError
+from sqlmodel import Session
+
+from app.core.exceptions import (
+    AuthenticationError,
+    ConflictError,
+    ForbiddenError,
+    NotFoundError,
+)
+from app.core.security import (
+    create_access_token,
+    hash_password,
+    verify_password,
+)
+from app.models.user import User
+from app.repositories.role_repository import get_role_by_name
+from app.repositories.user_repository import (
+    create_user,
+    get_user_by_email,
+)
+from app.schemas.auth import (
+    UserLogin,
+    UserRegister,
+)
+
+
+def register_user(
+    session: Session,
+    registration: UserRegister,
+) -> User:
+    normalized_email = str(registration.email).lower()
+
+    existing_user = get_user_by_email(
+        session,
+        normalized_email,
+    )
+
+    if existing_user is not None:
+        raise ConflictError(
+            message="Bu e-posta adresi zaten kullanılıyor.",
+            errors=[
+                {
+                    "field": "email",
+                    "message": "E-posta adresi benzersiz olmalıdır.",
+                }
+            ],
+        )
+
+    customer_role = get_role_by_name(
+        session,
+        "customer",
+    )
+
+    if customer_role is None or customer_role.id is None:
+        raise NotFoundError(
+            "Customer rolü veritabanında bulunamadı."
+        )
+
+    user = User(
+        name=registration.name.strip(),
+        email=normalized_email,
+        phone=registration.phone,
+        password_hash=hash_password(
+            registration.password
+        ),
+        role_id=customer_role.id,
+        is_active=True,
+        newsletter_allowed=registration.newsletter_allowed,
+        kvkk_accepted_at=datetime.now(UTC),
+    )
+
+    try:
+        created_user = create_user(
+            session,
+            user,
+        )
+        session.commit()
+        session.refresh(created_user)
+
+        return created_user
+
+    except IntegrityError as error:
+        session.rollback()
+
+        raise ConflictError(
+            message="Kullanıcı kaydı oluşturulamadı.",
+        ) from error
+
+
+def login_user(
+    session: Session,
+    login: UserLogin,
+) -> tuple[User, str]:
+    normalized_email = str(login.email).lower()
+
+    user = get_user_by_email(
+        session,
+        normalized_email,
+    )
+
+    if user is None:
+        raise AuthenticationError(
+            "E-posta veya şifre hatalı."
+        )
+
+    if not verify_password(
+        login.password,
+        user.password_hash,
+    ):
+        raise AuthenticationError(
+            "E-posta veya şifre hatalı."
+        )
+
+    if not user.is_active:
+        raise ForbiddenError(
+            "Kullanıcı hesabı pasif durumdadır."
+        )
+
+    user.last_login_at = datetime.now(UTC)
+    session.add(user)
+    session.commit()
+    session.refresh(user)
+
+    token = create_access_token(
+        subject=user.id,
+        additional_claims={
+            "role": user.role.name,
+        },
+    )
+
+    return user, token

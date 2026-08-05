@@ -28,6 +28,11 @@ class User(TimestampMixin, table=True):
     password_hash: str = Field(max_length=255)
     role_id: int = Field(foreign_key="roles.id", index=True)
     is_active: bool = Field(default=True)
+    newsletter_allowed: bool = Field(default=False)
+    kvkk_accepted_at: Optional[datetime] = Field(
+        default=None,
+        sa_column=Column(DateTime(timezone=True), nullable=True),
+    )
     email_verified_at: Optional[datetime] = Field(
         default=None,
         sa_column=Column(DateTime(timezone=True), nullable=True),
