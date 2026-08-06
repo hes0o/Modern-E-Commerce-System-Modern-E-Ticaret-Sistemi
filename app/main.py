@@ -11,6 +11,7 @@ from app.core.handlers import (
     validation_error_handler,
 )
 from app.core.rate_limit import RateLimitMiddleware
+from app.core.security_headers import SecurityHeadersMiddleware
 from app.routers.addresses import router as addresses_router
 from app.routers.auth import router as auth_router
 from app.routers.cart import router as cart_router
@@ -58,7 +59,7 @@ app.add_exception_handler(
     Exception,
     unexpected_error_handler,
 )
-
+app.add_middleware(SecurityHeadersMiddleware)
 
 app.include_router(auth_router)
 app.include_router(categories_router)
@@ -68,6 +69,7 @@ app.include_router(addresses_router)
 app.include_router(favorites_router)
 app.include_router(orders_router)
 app.include_router(uploads_router)
+
 
 app.mount(
     "/uploads",
