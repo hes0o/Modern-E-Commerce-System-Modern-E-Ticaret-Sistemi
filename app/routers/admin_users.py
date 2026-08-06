@@ -1,0 +1,117 @@
+from typing import Annotated
+
+from fastapi import APIRouter, Depends, Query, status
+from sqlmodel import Session
+
+from app.core.dependencies import require_admin
+from app.database import get_session
+from app.models.user import User
+from app.schemas.admin_user import (
+    AdminRoleName,
+    AdminUserCreate,
+    AdminUserListResponse,
+    AdminUserResponse,
+    AdminUserUpdate,
+)
+from app.schemas.common import ApiResponse
+from app.services.admin_user_service import (
+    create_admin_user,
+    get_admin_user,
+    list_admin_users,
+    update_admin_user,
+)
+
+router = APIRouter(
+    prefix="/api/admin/users",
+    tags=["Admin Users"],
+)
+
+
+@router.get(
+    "",
+    response_model=ApiResponse[AdminUserListResponse],
+)
+def admin_user_list(
+    session: Annotated[Session, Depends(get_session)],
+    _admin: Annotated[User, Depends(require_admin)],
+    page: Annotated[int, Query(ge=1)] = 1,
+    page_size: Annotated[int, Query(ge=1, le=100)] = 20,
+    search: str | None = None,
+    role_name: AdminRoleName | None = None,
+    is_active: bool | None = None,
+) -> ApiResponse[AdminUserListResponse]:
+    users = list_admin_users(
+        session,
+        page=page,
+        page_size=page_size,
+        search=search,
+        role_name=role_name,
+        is_active=is_active,
+    )
+
+    return ApiResponse(
+        success=True,
+        data=users,
+        message="Kullanıcılar getirildi.",
+    )
+
+
+@router.get(
+    "/{user_id}",
+    response_model=ApiResponse[AdminUserResponse],
+)
+def admin_user_detail(
+    user_id: int,
+    session: Annotated[Session, Depends(get_session)],
+    _admin: Annotated[User, Depends(require_admin)],
+) -> ApiResponse[AdminUserResponse]:
+    user = get_admin_user(session, user_id)
+
+    return ApiResponse(
+        success=True,
+        data=user,
+        message="Kullanıcı getirildi.",
+    )
+
+
+@router.post(
+    "",
+    response_model=ApiResponse[AdminUserResponse],
+    status_code=status.HTTP_201_CREATED,
+)
+def create_user(
+    payload: AdminUserCreate,
+    session: Annotated[Session, Depends(get_session)],
+    _admin: Annotated[User, Depends(require_admin)],
+) -> ApiResponse[AdminUserResponse]:
+    user = create_admin_user(session, payload)
+
+    return ApiResponse(
+        success=True,
+        data=user,
+        message="Kullanıcı başarıyla oluşturuldu.",
+    )
+
+
+@router.patch(
+    "/{user_id}",
+    response_model=ApiResponse[AdminUserResponse],
+)
+def update_user(
+    user_id: int,
+    payload: AdminUserUpdate,
+    session: Annotated[Session, Depends(get_session)],
+    admin: Annotated[User, Depends(require_admin)],
+) -> ApiResponse[AdminUserResponse]:
+    user = update_admin_user(
+        session,
+        user_id=user_id,
+        current_admin_id=admin.id,
+        payload=payload,
+    )
+
+    return ApiResponse(
+        success=True,
+        data=user,
+        message="Kullanıcı başarıyla güncellendi.",
+    )

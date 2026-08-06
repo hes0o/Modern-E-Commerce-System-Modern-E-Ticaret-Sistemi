@@ -13,6 +13,7 @@ from app.core.handlers import (
 from app.core.rate_limit import RateLimitMiddleware
 from app.core.security_headers import SecurityHeadersMiddleware
 from app.routers.addresses import router as addresses_router
+from app.routers.admin_users import router as admin_users_router
 from app.routers.auth import router as auth_router
 from app.routers.brands import router as brands_router
 from app.routers.cart import router as cart_router
@@ -75,6 +76,7 @@ app.include_router(uploads_router)
 app.include_router(brands_router)
 app.include_router(product_variants_router)
 app.include_router(product_images_router)
+app.include_router(admin_users_router)
 
 
 app.mount(
