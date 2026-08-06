@@ -104,7 +104,7 @@ def reserve_stock(
     product_id: int,
     variant_id: Optional[int],
     quantity: int,
-    order_id: int,
+    order_id: Optional[int],
 ) -> StockMovement:
     """
     Reserve stock for an order item (atomic deduction with row lock).

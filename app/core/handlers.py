@@ -1,8 +1,12 @@
+import logging
+
 from fastapi import Request
 from fastapi.exceptions import RequestValidationError
 from fastapi.responses import JSONResponse
 
 from app.core.exceptions import AppError
+
+logger = logging.getLogger(__name__)
 
 
 async def app_error_handler(
@@ -55,6 +59,15 @@ async def unexpected_error_handler(
     request: Request,
     exception: Exception,
 ) -> JSONResponse:
+    logger.error(
+        "Unexpected application error",
+        exc_info=(
+            type(exception),
+            exception,
+            exception.__traceback__,
+        ),
+    )
+
     return JSONResponse(
         status_code=500,
         content={

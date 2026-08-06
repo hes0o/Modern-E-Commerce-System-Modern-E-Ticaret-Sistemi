@@ -76,12 +76,20 @@ def _get_effective_price(
 ) -> Tuple[float, Optional[float]]:
     """
     Determine the effective price and discount price for an item.
-
-    Variant prices override product prices when present.
     """
     if variant and variant.price is not None:
-        return variant.price, variant.discount_price
-    return product.price, product.discount_price
+        price = variant.price
+        discount_price = variant.discount_price
+    else:
+        price = product.price
+        discount_price = product.discount_price
+
+    return (
+        float(price),
+        float(discount_price)
+        if discount_price is not None
+        else None,
+    )
 
 
 def create_order(
@@ -135,6 +143,7 @@ def create_order(
     order_items_data: List[dict] = []
     stock_conflicts: List[dict] = []
     low_stock_warnings: List[Tuple[int, Optional[int]]] = []  # (product_id, variant_id)
+    reserved_movements = []
     subtotal = 0.0
     discount_total = 0.0
     vat_total = 0.0
@@ -168,17 +177,19 @@ def create_order(
             if unit_discount_price
             else 0.0
         )
-        line_vat = line_total * (product.vat_rate / 100)
+        vat_rate = float(product.vat_rate)
+        line_vat = line_total * vat_rate / (100 + vat_rate)
 
         # 3. Try to reserve stock (SELECT ... FOR UPDATE + deduction)
         try:
-            reserve_stock(
+            movement = reserve_stock(
                 session,
                 product_id=cart_item.product_id,
                 variant_id=cart_item.variant_id,
                 quantity=cart_item.quantity,
-                order_id=0,  # Placeholder; updated after order creation
+                order_id=None,  # Placeholder; updated after order creation
             )
+            reserved_movements.append(movement)
         except InsufficientStockError as e:
             stock_conflicts.append(
                 {
@@ -207,7 +218,7 @@ def create_order(
             }
         )
 
-        subtotal += line_total
+        subtotal += unit_price * cart_item.quantity
         discount_total += line_discount
         vat_total += line_vat
 
@@ -216,7 +227,7 @@ def create_order(
         raise StockConflictError(stock_conflicts)
 
     # 5. Create the Order record
-    grand_total = subtotal + vat_total
+    grand_total = subtotal - discount_total
     order = Order(
         order_number=order_number,
         user_id=user_id,
@@ -252,14 +263,8 @@ def create_order(
     )
     session.add(history_entry)
 
-    # 8. Update stock_movements with the actual order ID
-    #    (they were created with order_id=0 as placeholder)
-    from app.models.stock import StockMovement
-
-    placeholder_movements = session.exec(
-        select(StockMovement).where(StockMovement.related_order_id == 0)
-    ).all()
-    for movement in placeholder_movements:
+        # 8. Link this order's stock movements to the real order ID
+    for movement in reserved_movements:
         movement.related_order_id = order.id
         session.add(movement)
 
