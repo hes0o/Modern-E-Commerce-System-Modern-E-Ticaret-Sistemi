@@ -8,19 +8,25 @@ from app.core.dependencies import get_current_user
 from app.database import get_session
 from app.models.user import User
 from app.schemas.auth import (
+    PasswordChange,
     TokenResponse,
     UserLogin,
+    UserProfileUpdate,
     UserRegister,
     UserResponse,
 )
 from app.schemas.common import ApiResponse
-from app.services.auth_service import login_user, register_user
+from app.services.auth_service import (
+    change_user_password,
+    login_user,
+    register_user,
+    update_user_profile,
+)
 
 router = APIRouter(
     prefix="/api/auth",
     tags=["Authentication"],
 )
-
 
 def create_user_response(user: User) -> UserResponse:
     return UserResponse(
@@ -87,4 +93,47 @@ def get_me(
         success=True,
         data=create_user_response(current_user),
         message="Oturum sahibi getirildi.",
+    )
+
+@router.patch(
+    "/me",
+    response_model=ApiResponse[UserResponse],
+)
+def update_me(
+    payload: UserProfileUpdate,
+    session: Annotated[Session, Depends(get_session)],
+    current_user: Annotated[User, Depends(get_current_user)],
+) -> ApiResponse[UserResponse]:
+    user = update_user_profile(
+        session,
+        user=current_user,
+        payload=payload,
+    )
+
+    return ApiResponse(
+        success=True,
+        data=create_user_response(user),
+        message="Profil bilgileri güncellendi.",
+    )
+
+
+@router.patch(
+    "/me/password",
+    response_model=ApiResponse[None],
+)
+def change_password(
+    payload: PasswordChange,
+    session: Annotated[Session, Depends(get_session)],
+    current_user: Annotated[User, Depends(get_current_user)],
+) -> ApiResponse[None]:
+    change_user_password(
+        session,
+        user=current_user,
+        payload=payload,
+    )
+
+    return ApiResponse(
+        success=True,
+        data=None,
+        message="Şifre başarıyla değiştirildi.",
     )

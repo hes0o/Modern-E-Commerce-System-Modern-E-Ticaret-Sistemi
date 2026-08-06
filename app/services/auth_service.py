@@ -21,7 +21,9 @@ from app.repositories.user_repository import (
     get_user_by_email,
 )
 from app.schemas.auth import (
+    PasswordChange,
     UserLogin,
+    UserProfileUpdate,
     UserRegister,
 )
 
@@ -131,3 +133,74 @@ def login_user(
     )
 
     return user, token
+
+def update_user_profile(
+    session: Session,
+    *,
+    user: User,
+    payload: UserProfileUpdate,
+) -> User:
+    update_data = payload.model_dump(exclude_unset=True)
+
+    if "email" in update_data:
+        normalized_email = str(
+            update_data["email"]
+        ).strip().lower()
+        existing_user = get_user_by_email(
+            session,
+            normalized_email,
+        )
+
+        if (
+            existing_user is not None
+            and existing_user.id != user.id
+        ):
+            raise ConflictError(
+                "Bu e-posta adresi zaten kullanılıyor."
+            )
+
+        update_data["email"] = normalized_email
+
+    if "name" in update_data:
+        update_data["name"] = update_data["name"].strip()
+
+    for field, value in update_data.items():
+        setattr(user, field, value)
+
+    user.updated_at = datetime.now(UTC)
+
+    try:
+        session.add(user)
+        session.commit()
+        session.refresh(user)
+
+    except IntegrityError as error:
+        session.rollback()
+        raise ConflictError(
+            "Profil bilgileri güncellenemedi."
+        ) from error
+
+    return user
+
+
+def change_user_password(
+    session: Session,
+    *,
+    user: User,
+    payload: PasswordChange,
+) -> None:
+    if not verify_password(
+        payload.current_password,
+        user.password_hash,
+    ):
+        raise AuthenticationError(
+            "Mevcut şifre hatalı."
+        )
+
+    user.password_hash = hash_password(
+        payload.new_password
+    )
+    user.updated_at = datetime.now(UTC)
+
+    session.add(user)
+    session.commit()
