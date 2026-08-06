@@ -10,6 +10,7 @@ from app.core.handlers import (
     unexpected_error_handler,
     validation_error_handler,
 )
+from app.core.rate_limit import RateLimitMiddleware
 from app.routers.addresses import router as addresses_router
 from app.routers.auth import router as auth_router
 from app.routers.cart import router as cart_router
@@ -25,6 +26,11 @@ app = FastAPI(
     description="Modern E-Ticaret Sistemi REST API",
 )
 
+app.add_middleware(
+    RateLimitMiddleware,
+    request_limit=120,
+    window_seconds=60,
+)
 
 app.add_middleware(
     CORSMiddleware,
