@@ -25,6 +25,7 @@ from app.routers.orders import router as orders_router
 from app.routers.product_images import router as product_images_router
 from app.routers.product_variants import router as product_variants_router
 from app.routers.products import router as products_router
+from app.routers.rbac import router as rbac_router
 from app.routers.settings import router as settings_router
 from app.routers.stock import router as stock_router
 from app.routers.uploads import router as uploads_router
@@ -85,6 +86,7 @@ app.include_router(stock_router)
 app.include_router(notifications_router)
 app.include_router(dashboard_router)
 app.include_router(settings_router)
+app.include_router(rbac_router)
 
 
 app.mount(
