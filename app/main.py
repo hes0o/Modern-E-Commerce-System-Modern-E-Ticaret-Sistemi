@@ -9,6 +9,7 @@ from app.core.handlers import (
     unexpected_error_handler,
     validation_error_handler,
 )
+from app.routers.addresses import router as addresses_router
 from app.routers.auth import router as auth_router
 from app.routers.cart import router as cart_router
 from app.routers.categories import router as categories_router
@@ -53,6 +54,7 @@ app.include_router(auth_router)
 app.include_router(categories_router)
 app.include_router(products_router)
 app.include_router(cart_router)
+app.include_router(addresses_router)
 
 @app.get("/api/health", tags=["System"])
 def health_check() -> dict[str, str]:
