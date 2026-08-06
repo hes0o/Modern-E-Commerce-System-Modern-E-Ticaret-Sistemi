@@ -6,9 +6,12 @@ PostgreSQL for integration tests.
 import os
 
 import pytest
+from fastapi.testclient import TestClient
 from sqlmodel import Session, SQLModel, create_engine
 
-from app.models import *  # noqa: F401, F403 — register all models
+from app.database import get_session
+from app.main import app
+from app.models import *
 from app.seeds.rbac_seed import seed_rbac
 
 
@@ -65,8 +68,8 @@ def fixture_sample_category(seeded_session):
 @pytest.fixture(name="sample_product")
 def fixture_sample_product(seeded_session, sample_category):
     """Create a sample product with stock for testing."""
-    from app.models.product import Product
     from app.models.enums import ProductStatus
+    from app.models.product import Product
 
     product = Product(
         category_id=sample_category.id,
@@ -91,8 +94,8 @@ def fixture_sample_product(seeded_session, sample_category):
 @pytest.fixture(name="sample_product_with_variants")
 def fixture_sample_product_with_variants(seeded_session, sample_category):
     """Create a sample product with variants for testing."""
-    from app.models.product import Product, ProductVariant
     from app.models.enums import ProductStatus
+    from app.models.product import Product, ProductVariant
 
     product = Product(
         category_id=sample_category.id,
@@ -138,9 +141,10 @@ def fixture_sample_product_with_variants(seeded_session, sample_category):
 @pytest.fixture(name="sample_user")
 def fixture_sample_user(seeded_session):
     """Create a sample customer user for testing."""
-    from app.models.user import User
     from sqlmodel import select
+
     from app.models.rbac import Role
+    from app.models.user import User
 
     customer_role = seeded_session.exec(
         select(Role).where(Role.name == "customer")
@@ -176,3 +180,20 @@ def fixture_sample_cart(seeded_session, sample_user, sample_product):
     seeded_session.flush()
 
     return cart
+
+@pytest.fixture(name="client")
+def fixture_client(engine):
+    """Provide a FastAPI test client using the test database."""
+    with Session(engine) as setup_session:
+        seed_rbac(setup_session)
+
+    def override_get_session():
+        with Session(engine) as test_session:
+            yield test_session
+
+    app.dependency_overrides[get_session] = override_get_session
+
+    with TestClient(app) as test_client:
+        yield test_client
+
+    app.dependency_overrides.clear()
