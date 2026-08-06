@@ -19,6 +19,7 @@ from app.routers.cart import router as cart_router
 from app.routers.categories import router as categories_router
 from app.routers.favorites import router as favorites_router
 from app.routers.orders import router as orders_router
+from app.routers.product_variants import router as product_variants_router
 from app.routers.products import router as products_router
 from app.routers.uploads import router as uploads_router
 
@@ -71,6 +72,7 @@ app.include_router(favorites_router)
 app.include_router(orders_router)
 app.include_router(uploads_router)
 app.include_router(brands_router)
+app.include_router(product_variants_router)
 
 
 app.mount(
