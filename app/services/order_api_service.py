@@ -1,3 +1,5 @@
+from datetime import UTC, datetime
+
 from sqlmodel import Session
 
 from app.core.exceptions import (
@@ -23,6 +25,7 @@ from app.repositories.order_repository import (
 )
 from app.schemas.order import (
     CheckoutAddress,
+    OrderAdminUpdate,
     OrderCreate,
     OrderListResponse,
     OrderResponse,
@@ -341,6 +344,33 @@ def change_order_status(
         raise
 
     saved_order = get_order_by_id(session, order_id)
+    if saved_order is None:
+        raise NotFoundError("Güncellenen sipariş bulunamadı.")
+
+    return OrderResponse.model_validate(saved_order)
+
+def update_order_admin_details(
+    session: Session,
+    *,
+    order_id: int,
+    payload: OrderAdminUpdate,
+) -> OrderResponse:
+    order = get_order_by_id(session, order_id)
+
+    if order is None:
+        raise NotFoundError("Sipariş bulunamadı.")
+
+    update_data = payload.model_dump(exclude_unset=True)
+
+    for field, value in update_data.items():
+        setattr(order, field, value)
+
+    order.updated_at = datetime.now(UTC)
+    session.add(order)
+    session.commit()
+
+    saved_order = get_order_by_id(session, order_id)
+
     if saved_order is None:
         raise NotFoundError("Güncellenen sipariş bulunamadı.")
 

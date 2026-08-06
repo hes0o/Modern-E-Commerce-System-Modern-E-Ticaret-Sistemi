@@ -13,6 +13,7 @@ from app.models.enums import OrderStatus
 from app.models.user import User
 from app.schemas.common import ApiResponse
 from app.schemas.order import (
+    OrderAdminUpdate,
     OrderCancel,
     OrderCreate,
     OrderListResponse,
@@ -27,6 +28,7 @@ from app.services.order_api_service import (
     get_my_order,
     list_admin_orders,
     list_my_orders,
+    update_order_admin_details,
 )
 
 router = APIRouter(
@@ -204,4 +206,26 @@ def update_admin_order_status(
         success=True,
         data=order,
         message="Sipariş durumu güncellendi.",
+    )
+
+@router.patch(
+    "/admin/{order_id}",
+    response_model=ApiResponse[OrderResponse],
+)
+def update_admin_order_details(
+    order_id: int,
+    payload: OrderAdminUpdate,
+    session: Annotated[Session, Depends(get_session)],
+    _admin: Annotated[User, Depends(require_admin)],
+) -> ApiResponse[OrderResponse]:
+    order = update_order_admin_details(
+        session,
+        order_id=order_id,
+        payload=payload,
+    )
+
+    return ApiResponse(
+        success=True,
+        data=order,
+        message="Sipariş yönetim bilgileri güncellendi.",
     )

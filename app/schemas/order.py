@@ -104,3 +104,13 @@ class OrderStatusUpdate(BaseModel):
 
 class OrderCancel(BaseModel):
     note: str | None = Field(default=None, max_length=1000)
+
+class OrderAdminUpdate(BaseModel):
+    admin_note: str | None = Field(
+        default=None,
+        max_length=2000,
+    )
+    shipping_tracking_number: str | None = Field(
+        default=None,
+        max_length=60,
+    )
