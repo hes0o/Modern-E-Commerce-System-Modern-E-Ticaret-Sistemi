@@ -1,6 +1,7 @@
 from fastapi import FastAPI
 from fastapi.exceptions import RequestValidationError
 from fastapi.middleware.cors import CORSMiddleware
+from fastapi.staticfiles import StaticFiles
 
 from app.core.config import settings
 from app.core.exceptions import AppError
@@ -16,6 +17,7 @@ from app.routers.categories import router as categories_router
 from app.routers.favorites import router as favorites_router
 from app.routers.orders import router as orders_router
 from app.routers.products import router as products_router
+from app.routers.uploads import router as uploads_router
 
 app = FastAPI(
     title=settings.app_name,
@@ -59,6 +61,13 @@ app.include_router(cart_router)
 app.include_router(addresses_router)
 app.include_router(favorites_router)
 app.include_router(orders_router)
+app.include_router(uploads_router)
+
+app.mount(
+    "/uploads",
+    StaticFiles(directory="uploads", check_dir=False),
+    name="uploads",
+)
 
 @app.get("/api/health", tags=["System"])
 def health_check() -> dict[str, str]:

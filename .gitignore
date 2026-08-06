@@ -41,3 +41,6 @@ uploads/
 .coverage
 htmlcov/
 .pytest_cache/
+
+# Uploaded user files
+uploads/
