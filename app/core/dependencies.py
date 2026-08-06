@@ -22,7 +22,7 @@ bearer_scheme = HTTPBearer(
 )
 
 
-def get_current_user(
+def get_optional_current_user(
     credentials: Annotated[
         HTTPAuthorizationCredentials | None,
         Depends(bearer_scheme),
@@ -31,11 +31,9 @@ def get_current_user(
         Session,
         Depends(get_session),
     ],
-) -> User:
+) -> User | None:
     if credentials is None:
-        raise AuthenticationError(
-            "Giriş yapmanız gerekiyor."
-        )
+        return None
 
     try:
         payload = decode_access_token(
@@ -75,6 +73,20 @@ def get_current_user(
         )
 
     return user
+
+
+def get_current_user(
+    current_user: Annotated[
+        User | None,
+        Depends(get_optional_current_user),
+    ],
+) -> User:
+    if current_user is None:
+        raise AuthenticationError(
+            "Giriş yapmanız gerekiyor."
+        )
+
+    return current_user
 
 
 def require_admin(
