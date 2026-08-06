@@ -6,7 +6,7 @@ from sqlmodel import Session
 from app.core.dependencies import (
     get_current_user,
     get_optional_current_user,
-    require_admin,
+    require_permission,
 )
 from app.database import get_session
 from app.models.enums import OrderStatus
@@ -144,7 +144,10 @@ def cancel_customer_order(
 )
 def admin_orders(
     session: Annotated[Session, Depends(get_session)],
-    _admin: Annotated[User, Depends(require_admin)],
+    _admin: Annotated[
+    User,
+    Depends(require_permission("order.read")),
+    ],
     page: Annotated[int, Query(ge=1)] = 1,
     page_size: Annotated[int, Query(ge=1, le=100)] = 20,
     order_status: OrderStatus | None = None,
@@ -170,7 +173,10 @@ def admin_orders(
 def admin_order_detail(
     order_id: int,
     session: Annotated[Session, Depends(get_session)],
-    _admin: Annotated[User, Depends(require_admin)],
+    _admin: Annotated[
+    User,
+    Depends(require_permission("order.read")),
+    ],
 ) -> ApiResponse[OrderResponse]:
     order = get_admin_order(
         session,
@@ -192,7 +198,10 @@ def update_admin_order_status(
     order_id: int,
     payload: OrderStatusUpdate,
     session: Annotated[Session, Depends(get_session)],
-    admin: Annotated[User, Depends(require_admin)],
+    admin: Annotated[
+    User,
+    Depends(require_permission("order.update_status")),
+    ],
 ) -> ApiResponse[OrderResponse]:
     order = change_order_status(
         session,
@@ -216,7 +225,15 @@ def update_admin_order_details(
     order_id: int,
     payload: OrderAdminUpdate,
     session: Annotated[Session, Depends(get_session)],
-    _admin: Annotated[User, Depends(require_admin)],
+    _admin: Annotated[
+    User,
+    Depends(
+        require_permission(
+            "order.add_note",
+            "order.update_tracking",
+        )
+    ),
+    ],
 ) -> ApiResponse[OrderResponse]:
     order = update_order_admin_details(
         session,

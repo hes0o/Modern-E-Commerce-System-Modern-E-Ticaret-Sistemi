@@ -3,7 +3,7 @@ from typing import Annotated
 from fastapi import APIRouter, Depends, Query
 from sqlmodel import Session
 
-from app.core.dependencies import require_admin
+from app.core.dependencies import require_permission
 from app.database import get_session
 from app.models.enums import StockMovementType
 from app.models.user import User
@@ -32,7 +32,10 @@ def change_product_stock(
     product_id: int,
     payload: StockUpdateRequest,
     session: Annotated[Session, Depends(get_session)],
-    admin: Annotated[User, Depends(require_admin)],
+    admin: Annotated[
+    User,
+    Depends(require_permission("stock.update")),
+    ],
 ) -> ApiResponse[StockMovementResponse]:
     movement = update_stock(
         session,
@@ -54,7 +57,10 @@ def change_product_stock(
 )
 def stock_movement_list(
     session: Annotated[Session, Depends(get_session)],
-    _admin: Annotated[User, Depends(require_admin)],
+    _admin: Annotated[
+    User,
+    Depends(require_permission("stock.read")),
+    ],
     page: Annotated[int, Query(ge=1)] = 1,
     page_size: Annotated[int, Query(ge=1, le=100)] = 20,
     product_id: int | None = None,

@@ -99,3 +99,53 @@ def test_admin_can_access_dashboard(client, engine):
     assert response.json()["success"] is True
     assert "daily_order_count" in response.json()["data"]
     assert "monthly_revenue" in response.json()["data"]
+
+def test_personnel_with_permission_can_access_dashboard(
+    client,
+    engine,
+):
+    email = "personnel.dashboard@example.com"
+
+    client.post(
+        "/api/auth/register",
+        json={
+            "name": "Personel Dashboard Testi",
+            "email": email,
+            "phone": "05551234567",
+            "password": "Test1234!",
+            "password_confirm": "Test1234!",
+            "kvkk_accepted": True,
+            "newsletter_allowed": False,
+        },
+    )
+
+    with Session(engine) as session:
+        user = session.exec(
+            select(User).where(User.email == email)
+        ).one()
+        personnel_role = session.exec(
+            select(Role).where(Role.name == "personnel")
+        ).one()
+
+        user.role_id = personnel_role.id
+        session.add(user)
+        session.commit()
+
+    login_response = client.post(
+        "/api/auth/login",
+        json={
+            "email": email,
+            "password": "Test1234!",
+        },
+    )
+    token = login_response.json()["data"]["access_token"]
+
+    response = client.get(
+        "/api/admin/dashboard",
+        headers={
+            "Authorization": f"Bearer {token}",
+        },
+    )
+
+    assert response.status_code == 200
+    assert response.json()["success"] is True

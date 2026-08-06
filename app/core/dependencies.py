@@ -101,3 +101,27 @@ def require_admin(
         )
 
     return current_user
+
+def require_permission(*permission_names: str):
+    def permission_dependency(
+        current_user: Annotated[
+            User,
+            Depends(get_current_user),
+        ],
+    ) -> User:
+        if current_user.role.name == "admin":
+            return current_user
+
+        user_permissions = {
+            permission.name
+            for permission in current_user.role.permissions
+        }
+
+        if not set(permission_names).issubset(user_permissions):
+            raise ForbiddenError(
+                "Bu işlem için gerekli izne sahip değilsiniz."
+            )
+
+        return current_user
+
+    return permission_dependency

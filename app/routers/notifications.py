@@ -3,7 +3,7 @@ from typing import Annotated
 from fastapi import APIRouter, Depends, Query, status
 from sqlmodel import Session
 
-from app.core.dependencies import require_admin
+from app.core.dependencies import require_permission
 from app.database import get_session
 from app.models.user import User
 from app.schemas.common import ApiResponse
@@ -32,7 +32,7 @@ router = APIRouter(
 )
 def notification_list(
     session: Annotated[Session, Depends(get_session)],
-    admin: Annotated[User, Depends(require_admin)],
+    admin: Annotated[User, Depends(require_permission("notification.read"))],
     notification_type: str | None = None,
     unread_only: Annotated[bool, Query()] = False,
 ) -> ApiResponse[NotificationListResponse]:
@@ -58,7 +58,7 @@ def notification_list(
 def create_notification(
     payload: NotificationCreate,
     session: Annotated[Session, Depends(get_session)],
-    _admin: Annotated[User, Depends(require_admin)],
+    _admin: Annotated[User, Depends(require_permission("notification.update"))],
 ) -> ApiResponse[NotificationResponse]:
     notification = create_new_notification(
         session,
@@ -78,7 +78,7 @@ def create_notification(
 )
 def read_all_notifications(
     session: Annotated[Session, Depends(get_session)],
-    admin: Annotated[User, Depends(require_admin)],
+    admin: Annotated[User, Depends(require_permission("notification.update"))],
 ) -> ApiResponse[dict[str, int]]:
     updated_count = mark_all_notifications_as_read(
         session,
@@ -99,7 +99,7 @@ def read_all_notifications(
 def read_notification(
     notification_id: int,
     session: Annotated[Session, Depends(get_session)],
-    admin: Annotated[User, Depends(require_admin)],
+    admin: Annotated[User, Depends(require_permission("notification.update"))],
 ) -> ApiResponse[NotificationResponse]:
     notification = mark_notification_as_read(
         session,
@@ -121,7 +121,7 @@ def read_notification(
 def delete_notification(
     notification_id: int,
     session: Annotated[Session, Depends(get_session)],
-    admin: Annotated[User, Depends(require_admin)],
+    admin: Annotated[User, Depends(require_permission("notification.update"))],
 ) -> ApiResponse[None]:
     remove_notification(
         session,

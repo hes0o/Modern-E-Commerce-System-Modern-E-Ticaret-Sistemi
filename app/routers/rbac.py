@@ -3,7 +3,7 @@ from typing import Annotated
 from fastapi import APIRouter, Depends
 from sqlmodel import Session
 
-from app.core.dependencies import require_admin
+from app.core.dependencies import require_permission
 from app.database import get_session
 from app.models.user import User
 from app.schemas.common import ApiResponse
@@ -30,7 +30,7 @@ router = APIRouter(
 )
 def role_list(
     session: Annotated[Session, Depends(get_session)],
-    _admin: Annotated[User, Depends(require_admin)],
+    _admin: Annotated[User, Depends(require_permission("user.assign_role"))],
 ) -> ApiResponse[list[RoleResponse]]:
     roles = list_roles(session)
 
@@ -47,7 +47,7 @@ def role_list(
 )
 def permission_list(
     session: Annotated[Session, Depends(get_session)],
-    _admin: Annotated[User, Depends(require_admin)],
+    _admin: Annotated[User, Depends(require_permission("user.assign_role"))],
 ) -> ApiResponse[list[PermissionResponse]]:
     permissions = list_permissions(session)
 
@@ -66,7 +66,7 @@ def replace_role_permissions(
     role_id: int,
     payload: RolePermissionUpdate,
     session: Annotated[Session, Depends(get_session)],
-    _admin: Annotated[User, Depends(require_admin)],
+    _admin: Annotated[User, Depends(require_permission("user.assign_role"))],
 ) -> ApiResponse[RoleResponse]:
     role = update_role_permissions(
         session,

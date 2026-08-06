@@ -2,7 +2,7 @@ from typing import Annotated
 
 from fastapi import APIRouter, Depends, File, UploadFile, status
 
-from app.core.dependencies import require_admin
+from app.core.dependencies import require_permission
 from app.models.user import User
 from app.schemas.common import ApiResponse
 from app.schemas.upload import ImageUploadResponse
@@ -25,7 +25,7 @@ router = APIRouter(
 async def upload_image(
     folder: UploadFolder,
     file: Annotated[UploadFile, File()],
-    _admin: Annotated[User, Depends(require_admin)],
+    _admin: Annotated[User, Depends(require_permission("product.update"))],
 ) -> ApiResponse[ImageUploadResponse]:
     image_path = await save_image(
         file,

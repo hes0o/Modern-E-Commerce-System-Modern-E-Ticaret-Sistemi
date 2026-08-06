@@ -3,7 +3,7 @@ from typing import Annotated
 from fastapi import APIRouter, Depends, Query, status
 from sqlmodel import Session
 
-from app.core.dependencies import require_admin
+from app.core.dependencies import require_permission
 from app.database import get_session
 from app.models.user import User
 from app.schemas.admin_user import (
@@ -33,7 +33,7 @@ router = APIRouter(
 )
 def admin_user_list(
     session: Annotated[Session, Depends(get_session)],
-    _admin: Annotated[User, Depends(require_admin)],
+    _admin: Annotated[User, Depends(require_permission("user.read"))],
     page: Annotated[int, Query(ge=1)] = 1,
     page_size: Annotated[int, Query(ge=1, le=100)] = 20,
     search: str | None = None,
@@ -63,7 +63,7 @@ def admin_user_list(
 def admin_user_detail(
     user_id: int,
     session: Annotated[Session, Depends(get_session)],
-    _admin: Annotated[User, Depends(require_admin)],
+    _admin: Annotated[User, Depends(require_permission("user.read"))],
 ) -> ApiResponse[AdminUserResponse]:
     user = get_admin_user(session, user_id)
 
@@ -82,7 +82,7 @@ def admin_user_detail(
 def create_user(
     payload: AdminUserCreate,
     session: Annotated[Session, Depends(get_session)],
-    _admin: Annotated[User, Depends(require_admin)],
+    _admin: Annotated[User, Depends(require_permission("user.create", "user.assign_role"))],
 ) -> ApiResponse[AdminUserResponse]:
     user = create_admin_user(session, payload)
 
@@ -101,7 +101,7 @@ def update_user(
     user_id: int,
     payload: AdminUserUpdate,
     session: Annotated[Session, Depends(get_session)],
-    admin: Annotated[User, Depends(require_admin)],
+    admin: Annotated[User, Depends(require_permission("user.update", "user.assign_role"))],
 ) -> ApiResponse[AdminUserResponse]:
     user = update_admin_user(
         session,

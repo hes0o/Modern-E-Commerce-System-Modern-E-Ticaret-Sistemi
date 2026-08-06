@@ -3,7 +3,7 @@ from typing import Annotated
 from fastapi import APIRouter, Depends, status
 from sqlmodel import Session
 
-from app.core.dependencies import require_admin
+from app.core.dependencies import require_permission
 from app.database import get_session
 from app.models.user import User
 from app.schemas.common import ApiResponse
@@ -54,7 +54,7 @@ def create_variant(
     product_id: int,
     payload: ProductVariantCreate,
     session: Annotated[Session, Depends(get_session)],
-    _admin: Annotated[User, Depends(require_admin)],
+    _admin: Annotated[User, Depends(require_permission("product.update"))],
 ) -> ApiResponse[ProductVariantResponse]:
     variant = create_new_variant(
         session,
@@ -78,7 +78,7 @@ def update_variant(
     variant_id: int,
     payload: ProductVariantUpdate,
     session: Annotated[Session, Depends(get_session)],
-    _admin: Annotated[User, Depends(require_admin)],
+    _admin: Annotated[User, Depends(require_permission("product.update"))],
 ) -> ApiResponse[ProductVariantResponse]:
     variant = update_existing_variant(
         session,
@@ -102,7 +102,7 @@ def delete_variant(
     product_id: int,
     variant_id: int,
     session: Annotated[Session, Depends(get_session)],
-    _admin: Annotated[User, Depends(require_admin)],
+    _admin: Annotated[User, Depends(require_permission("product.delete"))],
 ) -> ApiResponse[None]:
     delete_existing_variant(
         session,

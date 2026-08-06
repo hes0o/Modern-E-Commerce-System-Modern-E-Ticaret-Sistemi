@@ -3,7 +3,7 @@ from typing import Annotated
 from fastapi import APIRouter, Depends, status
 from sqlmodel import Session
 
-from app.core.dependencies import require_admin
+from app.core.dependencies import require_permission
 from app.database import get_session
 from app.models.user import User
 from app.schemas.brand import (
@@ -48,7 +48,10 @@ def public_brand_list(
 )
 def admin_brand_list(
     session: Annotated[Session, Depends(get_session)],
-    _admin: Annotated[User, Depends(require_admin)],
+    _admin: Annotated[
+    User,
+    Depends(require_permission("brand.read")),
+    ],
 ) -> ApiResponse[list[BrandResponse]]:
     brands = list_brands(
         session,
@@ -69,7 +72,10 @@ def admin_brand_list(
 def admin_brand_detail(
     brand_id: int,
     session: Annotated[Session, Depends(get_session)],
-    _admin: Annotated[User, Depends(require_admin)],
+    _admin: Annotated[
+    User,
+    Depends(require_permission("brand.read")),
+    ],
 ) -> ApiResponse[BrandResponse]:
     brand = get_brand(session, brand_id)
 
@@ -88,7 +94,10 @@ def admin_brand_detail(
 def create_brand(
     payload: BrandCreate,
     session: Annotated[Session, Depends(get_session)],
-    _admin: Annotated[User, Depends(require_admin)],
+    _admin: Annotated[
+    User,
+    Depends(require_permission("brand.create")),
+    ],
 ) -> ApiResponse[BrandResponse]:
     brand = create_new_brand(session, payload)
 
@@ -107,7 +116,10 @@ def update_brand(
     brand_id: int,
     payload: BrandUpdate,
     session: Annotated[Session, Depends(get_session)],
-    _admin: Annotated[User, Depends(require_admin)],
+    _admin: Annotated[
+    User,
+    Depends(require_permission("brand.update")),
+    ],
 ) -> ApiResponse[BrandResponse]:
     brand = update_existing_brand(
         session,
@@ -129,7 +141,10 @@ def update_brand(
 def delete_brand(
     brand_id: int,
     session: Annotated[Session, Depends(get_session)],
-    _admin: Annotated[User, Depends(require_admin)],
+    _admin: Annotated[
+    User,
+    Depends(require_permission("brand.delete")),
+    ],
 ) -> ApiResponse[BrandResponse]:
     brand = deactivate_brand(session, brand_id)
 

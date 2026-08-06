@@ -3,7 +3,7 @@ from typing import Annotated
 from fastapi import APIRouter, Depends, Query, status
 from sqlmodel import Session
 
-from app.core.dependencies import require_admin
+from app.core.dependencies import require_permission
 from app.database import get_session
 from app.models.user import User
 from app.schemas.common import ApiResponse
@@ -94,7 +94,10 @@ def get_product_detail(
 def create_product(
     product_data: ProductCreate,
     session: Annotated[Session, Depends(get_session)],
-    _admin_user: Annotated[User, Depends(require_admin)],
+    _admin_user: Annotated[
+    User,
+    Depends(require_permission("product.create")),
+    ],
 ) -> ApiResponse[ProductResponse]:
     product = create_new_product(
         session,
@@ -116,7 +119,10 @@ def update_product(
     product_id: int,
     product_data: ProductUpdate,
     session: Annotated[Session, Depends(get_session)],
-    _admin_user: Annotated[User, Depends(require_admin)],
+    _admin_user: Annotated[
+    User,
+    Depends(require_permission("product.update")),
+    ],
 ) -> ApiResponse[ProductResponse]:
     product = update_existing_product(
         session,
@@ -138,7 +144,10 @@ def update_product(
 def delete_product(
     product_id: int,
     session: Annotated[Session, Depends(get_session)],
-    _admin_user: Annotated[User, Depends(require_admin)],
+    _admin_user: Annotated[
+    User,
+    Depends(require_permission("product.delete")),
+    ],
 ) -> ApiResponse[ProductResponse]:
     product = archive_product(
         session,

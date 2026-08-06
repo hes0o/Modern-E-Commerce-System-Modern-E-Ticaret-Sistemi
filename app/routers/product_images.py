@@ -10,7 +10,7 @@ from fastapi import (
 )
 from sqlmodel import Session
 
-from app.core.dependencies import require_admin
+from app.core.dependencies import require_permission
 from app.database import get_session
 from app.models.user import User
 from app.schemas.common import ApiResponse
@@ -56,7 +56,7 @@ async def create_product_image(
     product_id: int,
     file: Annotated[UploadFile, File()],
     session: Annotated[Session, Depends(get_session)],
-    _admin: Annotated[User, Depends(require_admin)],
+    _admin: Annotated[User, Depends(require_permission("product.update"))],
     is_cover: Annotated[bool, Form()] = False,
     sort_order: Annotated[int, Form(ge=0)] = 0,
 ) -> ApiResponse[ProductImageResponse]:
@@ -83,7 +83,7 @@ def delete_product_image(
     product_id: int,
     image_id: int,
     session: Annotated[Session, Depends(get_session)],
-    _admin: Annotated[User, Depends(require_admin)],
+    _admin: Annotated[User, Depends(require_permission("product.update"))],
 ) -> ApiResponse[None]:
     delete_existing_product_image(
         session,

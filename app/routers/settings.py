@@ -3,7 +3,7 @@ from typing import Annotated
 from fastapi import APIRouter, Depends, status
 from sqlmodel import Session
 
-from app.core.dependencies import require_admin
+from app.core.dependencies import require_permission
 from app.database import get_session
 from app.models.user import User
 from app.schemas.common import ApiResponse
@@ -31,7 +31,7 @@ router = APIRouter(
 )
 def setting_list(
     session: Annotated[Session, Depends(get_session)],
-    _admin: Annotated[User, Depends(require_admin)],
+    _admin: Annotated[User, Depends(require_permission("settings.read"))],
     group: str | None = None,
 ) -> ApiResponse[list[SettingResponse]]:
     settings = list_settings(
@@ -54,7 +54,7 @@ def setting_list(
 def create_setting(
     payload: SettingCreate,
     session: Annotated[Session, Depends(get_session)],
-    _admin: Annotated[User, Depends(require_admin)],
+    _admin: Annotated[User, Depends(require_permission("settings.update"))],
 ) -> ApiResponse[SettingResponse]:
     setting = create_new_setting(session, payload)
 
@@ -73,7 +73,7 @@ def update_setting(
     setting_id: int,
     payload: SettingUpdate,
     session: Annotated[Session, Depends(get_session)],
-    _admin: Annotated[User, Depends(require_admin)],
+    _admin: Annotated[User, Depends(require_permission("settings.update"))],
 ) -> ApiResponse[SettingResponse]:
     setting = update_existing_setting(
         session,
@@ -95,7 +95,7 @@ def update_setting(
 def delete_setting(
     setting_id: int,
     session: Annotated[Session, Depends(get_session)],
-    _admin: Annotated[User, Depends(require_admin)],
+    _admin: Annotated[User, Depends(require_permission("settings.update"))],
 ) -> ApiResponse[None]:
     remove_setting(session, setting_id)
 

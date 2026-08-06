@@ -3,7 +3,7 @@ from typing import Annotated
 from fastapi import APIRouter, Depends, status
 from sqlmodel import Session
 
-from app.core.dependencies import require_admin
+from app.core.dependencies import require_permission
 from app.database import get_session
 from app.models.user import User
 from app.schemas.category import (
@@ -46,10 +46,7 @@ def get_category_list(
 
     return ApiResponse(
         success=True,
-        data=[
-            create_category_response(category)
-            for category in categories
-        ],
+        data=[create_category_response(category) for category in categories],
         message="Kategoriler getirildi.",
     )
 
@@ -79,7 +76,10 @@ def get_category_detail(
 def create_category(
     category_data: CategoryCreate,
     session: Annotated[Session, Depends(get_session)],
-    _admin_user: Annotated[User, Depends(require_admin)],
+    _admin_user: Annotated[
+        User,
+        Depends(require_permission("category.create")),
+    ],
 ) -> ApiResponse[CategoryResponse]:
     category = create_new_category(
         session,
@@ -101,7 +101,10 @@ def update_category(
     category_id: int,
     category_data: CategoryUpdate,
     session: Annotated[Session, Depends(get_session)],
-    _admin_user: Annotated[User, Depends(require_admin)],
+    _admin_user: Annotated[
+        User,
+        Depends(require_permission("category.update")),
+    ],
 ) -> ApiResponse[CategoryResponse]:
     category = update_existing_category(
         session,
@@ -123,7 +126,10 @@ def update_category(
 def delete_category(
     category_id: int,
     session: Annotated[Session, Depends(get_session)],
-    _admin_user: Annotated[User, Depends(require_admin)],
+    _admin_user: Annotated[
+        User,
+        Depends(require_permission("category.delete")),
+    ],
 ) -> ApiResponse[CategoryResponse]:
     category = deactivate_category(
         session,

@@ -4,7 +4,7 @@ from typing import Annotated
 from fastapi import APIRouter, Depends, Query, Response
 from sqlmodel import Session
 
-from app.core.dependencies import require_admin
+from app.core.dependencies import require_permission
 from app.database import get_session
 from app.models.user import User
 from app.schemas.common import ApiResponse
@@ -28,7 +28,7 @@ def sales_report(
     date_from: Annotated[date, Query()],
     date_to: Annotated[date, Query()],
     session: Annotated[Session, Depends(get_session)],
-    _admin: Annotated[User, Depends(require_admin)],
+    _admin: Annotated[User, Depends(require_permission("report.read"))],
 ) -> ApiResponse[SalesReportResponse]:
     report = generate_sales_report(
         session,
@@ -50,7 +50,7 @@ def export_sales_report(
     date_from: Annotated[date, Query()],
     date_to: Annotated[date, Query()],
     session: Annotated[Session, Depends(get_session)],
-    _admin: Annotated[User, Depends(require_admin)],
+    _admin: Annotated[User, Depends(require_permission("report.export"))],
 ) -> Response:
     report = generate_sales_report(
         session,

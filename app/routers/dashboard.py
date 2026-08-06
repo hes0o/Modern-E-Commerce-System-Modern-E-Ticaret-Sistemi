@@ -3,7 +3,7 @@ from typing import Annotated
 from fastapi import APIRouter, Depends
 from sqlmodel import Session
 
-from app.core.dependencies import require_admin
+from app.core.dependencies import require_permission
 from app.database import get_session
 from app.models.user import User
 from app.schemas.common import ApiResponse
@@ -24,7 +24,10 @@ router = APIRouter(
 )
 def dashboard_summary(
     session: Annotated[Session, Depends(get_session)],
-    _admin: Annotated[User, Depends(require_admin)],
+    _user: Annotated[
+    User,
+    Depends(require_permission("dashboard.read")),
+],
 ) -> ApiResponse[DashboardSummary]:
     dashboard = get_dashboard_summary(session)
 
