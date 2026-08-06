@@ -49,16 +49,19 @@ def checkout(
         User | None,
         Depends(get_optional_current_user),
     ],
-    cart_token: Annotated[
+        session_token: Annotated[
         str | None,
-        Header(alias="X-Cart-Token"),
+        Header(
+            alias="X-Session-Token",
+            max_length=100,
+        ),
     ] = None,
 ) -> ApiResponse[OrderResponse]:
     order = create_checkout_order(
         session,
         payload=payload,
         current_user=current_user,
-        session_token=cart_token,
+        session_token=session_token,
     )
 
     return ApiResponse(

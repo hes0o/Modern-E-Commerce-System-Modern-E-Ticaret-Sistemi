@@ -133,3 +133,83 @@ def test_order_creation_and_cancellation_restores_stock(
     with Session(engine) as session:
         product_after_cancel = session.get(Product, product_id)
         assert product_after_cancel.stock == 10
+
+def test_guest_checkout_uses_session_token(client, engine):
+    with Session(engine) as session:
+        category = Category(
+            name="Misafir Sipariş Kategorisi",
+            slug="misafir-siparis-kategorisi",
+            is_active=True,
+        )
+        session.add(category)
+        session.flush()
+
+        product = Product(
+            category_id=category.id,
+            sku="GUEST-ORDER-001",
+            name="Misafir Sipariş Ürünü",
+            slug="misafir-siparis-urunu",
+            short_description="Misafir sipariş testi",
+            long_description="Misafir checkout testi için ürün",
+            price=500,
+            vat_rate=20,
+            status=ProductStatus.PUBLISHED,
+            has_variants=False,
+            stock=5,
+            min_stock_level=1,
+        )
+        session.add(product)
+        session.commit()
+        product_id = product.id
+
+    cart_response = client.post(
+        "/api/cart/items",
+        json={
+            "product_id": product_id,
+            "variant_id": None,
+            "quantity": 1,
+        },
+    )
+
+    assert cart_response.status_code == 200
+
+    session_token = cart_response.json()["data"]["session_token"]
+
+    assert session_token is not None
+
+    headers = {
+        "X-Session-Token": session_token,
+    }
+
+    order_response = client.post(
+        "/api/orders",
+        headers=headers,
+        json={
+            "guest_name": "Misafir Kullanıcı",
+            "guest_email": "guest@example.com",
+            "guest_phone": "05551234567",
+            "shipping_address": {
+                "title": "Ev",
+                "recipient_name": "Misafir Kullanıcı",
+                "phone": "05551234567",
+                "city": "Elazığ",
+                "district": "Merkez",
+                "full_address": (
+                    "Misafir sipariş test adresi No: 1"
+                ),
+                "postal_code": "23000",
+            },
+            "payment_method": "cod",
+            "customer_note": "Misafir checkout testi",
+            "contract_version_accepted": "v1",
+        },
+    )
+
+    assert order_response.status_code == 201
+    assert order_response.json()["success"] is True
+    assert order_response.json()["data"]["user_id"] is None
+    assert (
+        order_response.json()["data"]["guest_email"]
+        == "guest@example.com"
+    )
+    assert order_response.json()["data"]["status"] == "pending"
