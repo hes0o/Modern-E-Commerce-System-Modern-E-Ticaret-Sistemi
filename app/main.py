@@ -14,6 +14,7 @@ from app.core.rate_limit import RateLimitMiddleware
 from app.core.security_headers import SecurityHeadersMiddleware
 from app.routers.addresses import router as addresses_router
 from app.routers.auth import router as auth_router
+from app.routers.brands import router as brands_router
 from app.routers.cart import router as cart_router
 from app.routers.categories import router as categories_router
 from app.routers.favorites import router as favorites_router
@@ -69,6 +70,7 @@ app.include_router(addresses_router)
 app.include_router(favorites_router)
 app.include_router(orders_router)
 app.include_router(uploads_router)
+app.include_router(brands_router)
 
 
 app.mount(
