@@ -1,0 +1,144 @@
+from sqlalchemy.exc import NoResultFound
+from sqlmodel import Session
+
+from app.core.exceptions import (
+    BusinessRuleError,
+    ConflictError,
+    NotFoundError,
+)
+from app.models.enums import StockMovementType
+from app.repositories.stock_repository import (
+    get_stock_movements,
+)
+from app.schemas.stock import (
+    StockMovementListResponse,
+    StockMovementResponse,
+    StockUpdateRequest,
+)
+from app.services.stock_service import (
+    InsufficientStockError,
+    manual_stock_in,
+    manual_stock_out,
+    stock_adjustment,
+)
+
+
+def update_stock(
+    session: Session,
+    *,
+    product_id: int,
+    user_id: int,
+    payload: StockUpdateRequest,
+) -> StockMovementResponse:
+    try:
+        if payload.operation in {"in", "out"}:
+            if payload.quantity is None:
+                raise BusinessRuleError(
+                    "Stok giriş/çıkış işlemi için miktar gereklidir."
+                )
+
+            if payload.operation == "in":
+                movement = manual_stock_in(
+                    session,
+                    product_id=product_id,
+                    variant_id=payload.variant_id,
+                    quantity=payload.quantity,
+                    user_id=user_id,
+                    note=payload.note,
+                )
+            else:
+                movement = manual_stock_out(
+                    session,
+                    product_id=product_id,
+                    variant_id=payload.variant_id,
+                    quantity=payload.quantity,
+                    user_id=user_id,
+                    note=payload.note,
+                )
+
+        else:
+            if payload.new_stock_count is None:
+                raise BusinessRuleError(
+                    "Stok düzeltme işlemi için yeni stok değeri gereklidir."
+                )
+
+            movement = stock_adjustment(
+                session,
+                product_id=product_id,
+                variant_id=payload.variant_id,
+                new_stock_count=payload.new_stock_count,
+                user_id=user_id,
+                note=payload.note,
+            )
+
+        session.commit()
+        session.refresh(movement)
+
+    except InsufficientStockError as error:
+        session.rollback()
+        raise ConflictError(
+            (
+                "Yeterli stok yok. "
+                f"Kullanılabilir stok: {error.available}."
+            ),
+            errors=[
+                {
+                    "product_id": error.product_id,
+                    "variant_id": error.variant_id,
+                    "requested": error.requested,
+                    "available": error.available,
+                }
+            ],
+        ) from error
+
+    except NoResultFound as error:
+        session.rollback()
+        raise NotFoundError(
+            "Ürün veya ürün varyantı bulunamadı."
+        ) from error
+
+    except ValueError as error:
+        session.rollback()
+        raise BusinessRuleError(str(error)) from error
+
+    except Exception:
+        session.rollback()
+        raise
+
+    return StockMovementResponse.model_validate(movement)
+
+
+def list_stock_movements(
+    session: Session,
+    *,
+    page: int,
+    page_size: int,
+    product_id: int | None,
+    variant_id: int | None,
+    movement_type: StockMovementType | None,
+) -> StockMovementListResponse:
+    movements, total = get_stock_movements(
+        session,
+        page=page,
+        page_size=page_size,
+        product_id=product_id,
+        variant_id=variant_id,
+        movement_type=movement_type,
+    )
+
+    total_pages = (
+        (total + page_size - 1) // page_size
+        if total > 0
+        else 0
+    )
+
+    return StockMovementListResponse(
+        items=[
+            StockMovementResponse.model_validate(movement)
+            for movement in movements
+        ],
+        total=total,
+        page=page,
+        page_size=page_size,
+        total_pages=total_pages,
+    )

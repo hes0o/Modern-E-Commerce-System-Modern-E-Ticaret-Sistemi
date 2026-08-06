@@ -23,6 +23,7 @@ from app.routers.orders import router as orders_router
 from app.routers.product_images import router as product_images_router
 from app.routers.product_variants import router as product_variants_router
 from app.routers.products import router as products_router
+from app.routers.stock import router as stock_router
 from app.routers.uploads import router as uploads_router
 
 app = FastAPI(
@@ -77,6 +78,7 @@ app.include_router(brands_router)
 app.include_router(product_variants_router)
 app.include_router(product_images_router)
 app.include_router(admin_users_router)
+app.include_router(stock_router)
 
 
 app.mount(
