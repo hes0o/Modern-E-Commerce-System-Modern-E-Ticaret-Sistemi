@@ -1,0 +1,52 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  html {
+    scroll-behavior: smooth;
+  }
+  body {
+    @apply bg-paper text-ink font-body antialiased;
+  }
+  h1, h2, h3, h4 {
+    @apply font-display text-ink;
+  }
+  a {
+    @apply text-inherit;
+  }
+  :focus-visible {
+    outline: 2px solid #0F6656;
+    outline-offset: 2px;
+  }
+}
+
+@layer components {
+  .container-page {
+    @apply mx-auto w-full max-w-[1240px] px-4 sm:px-6 lg:px-8;
+  }
+  .btn {
+    @apply inline-flex items-center justify-center gap-2 rounded-DEFAULT px-4 py-2.5 text-sm font-medium transition-colors disabled:opacity-40 disabled:cursor-not-allowed;
+  }
+  .btn-primary {
+    @apply btn bg-primary text-white hover:bg-primary-hover;
+  }
+  .btn-outline {
+    @apply btn border border-line bg-surface text-ink hover:border-ink-faint;
+  }
+  .btn-ghost {
+    @apply btn text-ink-soft hover:text-ink hover:bg-black/[0.03];
+  }
+  .input {
+    @apply w-full rounded-DEFAULT border border-line bg-surface px-3.5 py-2.5 text-sm text-ink placeholder:text-ink-faint focus:border-primary focus:ring-1 focus:ring-primary outline-none transition-colors;
+  }
+  .label {
+    @apply mb-1.5 block text-sm font-medium text-ink;
+  }
+  .field-error {
+    @apply mt-1.5 text-xs text-danger;
+  }
+  .card {
+    @apply rounded-lg border border-line bg-surface shadow-card;
+  }
+}
