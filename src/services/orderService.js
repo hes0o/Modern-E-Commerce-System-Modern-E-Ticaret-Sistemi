@@ -25,15 +25,54 @@ export const orderService = {
     await delay(200)
     const order = _orders.find(o => o.id === id)
     if (!order) throw new Error('Order not found')
-    return order
+    return { ...order }
+  },
+
+  async create(data) {
+    await delay(500)
+    const newOrder = {
+      ...data,
+      id: `ORD-${String(Date.now()).slice(-6)}`,
+      status: 'pending',
+      orderedAt: new Date().toISOString().split('T')[0],
+      updatedAt: new Date().toISOString().split('T')[0],
+      trackingNo: null,
+      timeline: [{ status: 'pending', label: 'Sipariş Alındı', date: new Date().toISOString().split('T')[0] }],
+    }
+    _orders.unshift(newOrder)
+    return newOrder
   },
 
   async updateStatus(id, status) {
     await delay(400)
     const idx = _orders.findIndex(o => o.id === id)
     if (idx === -1) throw new Error('Order not found')
-    _orders[idx] = { ..._orders[idx], status, updatedAt: new Date().toISOString().split('T')[0] }
-    return _orders[idx]
+    const today = new Date().toISOString().split('T')[0]
+    const statusLabels = {
+      pending: 'Sipariş Alındı',
+      processing: 'Hazırlanıyor',
+      shipped: 'Kargoya Verildi',
+      delivered: 'Teslim Edildi',
+      cancelled: 'İptal Edildi',
+    }
+    // Build updated timeline
+    const existingTimeline = _orders[idx].timeline || []
+    const alreadyHasStatus = existingTimeline.some(t => t.status === status)
+    const updatedTimeline = alreadyHasStatus
+      ? existingTimeline
+      : [...existingTimeline, { status, label: statusLabels[status] || status, date: today }]
+
+    _orders[idx] = {
+      ..._orders[idx],
+      status,
+      updatedAt: today,
+      timeline: updatedTimeline,
+      // Auto-assign tracking when shipped
+      ...(status === 'shipped' && !_orders[idx].trackingNo
+        ? { trackingNo: `TRK${Math.floor(Math.random() * 900000000 + 100000000)}` }
+        : {}),
+    }
+    return { ..._orders[idx] }
   },
 
   async getStats() {
@@ -69,7 +108,7 @@ export const orderService = {
 
   async getSalesByMonth() {
     await delay(200)
-    const months = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec']
+    const months = ['Oca', 'Şub', 'Mar', 'Nis', 'May', 'Haz', 'Tem', 'Ağu', 'Eyl', 'Eki', 'Kas', 'Ara']
     const data = months.map((name, idx) => {
       const monthOrders = _orders.filter(o => {
         const d = new Date(o.orderedAt)

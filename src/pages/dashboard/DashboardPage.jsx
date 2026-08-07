@@ -10,7 +10,7 @@ import { stockService } from '@/services/stockService'
 import { formatCurrency, formatDate } from '@/utils/formatters'
 import { Link } from 'react-router-dom'
 import TopProducts from "@/components/dashboard/TopProducts"
-import { useNavigate } from 'react-router-dom'
+import { useNavigate, useLocation } from 'react-router-dom'
 
 
 export default function DashboardPage() {
@@ -25,6 +25,14 @@ export default function DashboardPage() {
   const [salesData, setSalesData] = useState([])
   const [latestOrders, setLatestOrders] = useState([])
   const [loading, setLoading] = useState(true)
+  const [period, setPeriod] = useState('1M')
+
+  const PERIODS = [{ value: '1D', label: 'Bugün' },
+  { value: '7D', label: '7 Gün' },
+  { value: '1M', label: '1 Ay' },
+  { value: '1Y', label: '1 Yıl' },
+  { value: '2Y', label: '2 Yıl' },
+]
 
   useEffect(() => {
     async function loadDashboard() {
@@ -32,7 +40,7 @@ export default function DashboardPage() {
         const orderStats = await orderService.getStats()
         const userStats = await userService.getStats()
         const stockStats = await stockService.getStats()
-        const salesChart = await orderService.getSalesByMonth()
+        const salesChart = await orderService.getSalesByMonth(period)
         const recent = await orderService.getAll({ page: 1, limit: 5 })
 
         setStats({
@@ -51,7 +59,7 @@ export default function DashboardPage() {
       }
     }
     loadDashboard()
-  }, [])
+  }, [period])
 
   return (
     <div className="space-y-6">
@@ -62,13 +70,18 @@ export default function DashboardPage() {
           <p className="page-subtitle">Hoş geldiniz! Mağazanızın genel durumu ve canlı metrikleri.</p>
         </div>
 
-        <div className="flex items-center gap-2">
+        <div className="flex items-center gap-3">
+
           <Link to="/products/new" className="btn btn-primary">
-            <Plus size={15} /> Yeni Ürün Ekle
+          <Plus size={15} />
+            Yeni Ürün Ekle
           </Link>
+
           <Link to="/reports" className="btn btn-secondary">
-            <Download size={15} /> Rapor Al
+          <Download size={15} />
+           Rapor Al
           </Link>
+
         </div>
       </div>
 
@@ -117,16 +130,28 @@ export default function DashboardPage() {
         <div className="card p-5 lg:col-span-2 space-y-4">
           <div className="flex items-center justify-between border-b border-slate-100 pb-3">
             <div>
-              <h3 className="text-sm font-bold text-slate-900 tracking-tight">Gelir Performansı</h3>
-              <p className="text-[11px] text-slate-400">Aylık bazda gerçekleşen satış hacmi</p>
-            </div>
-            <span className="text-xs font-semibold text-slate-600 bg-slate-100 px-2.5 py-1 rounded-md">2026 Yılı</span>
+              <h3 className="text-sm font-bold text-slate-900">
+                Gelir Performansı</h3>
+              <p className="text-xs text-slate-400">
+              Aylık bazda gerçekleşen satış hacmi
+            </p>
           </div>
-          {loading ? (
-            <div className="h-72 skeleton rounded-xl" />
-          ) : (
-            <SalesChart data={salesData} />
-          )}
+          <select
+            value={period}
+            onChange={(e) => setPeriod(e.target.value)}
+            className="select w-36">
+              {PERIODS.map(item => (
+                <option key={item.value} value={item.value}>
+                  {item.label}
+                  </option>
+                ))}
+                </select>
+              </div>
+              {loading ? (
+                <div className="h-72 skeleton rounded-xl" />
+              ) : (
+              <SalesChart data={salesData} />
+              )}
         </div>
         <TopProducts />
         <div className="card p-5 space-y-4">
