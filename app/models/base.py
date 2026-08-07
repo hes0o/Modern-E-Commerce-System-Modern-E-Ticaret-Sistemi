@@ -1,13 +1,13 @@
 """Shared timestamp fields for database models."""
 
-from datetime import UTC, datetime
+from datetime import timezone, datetime
 
 from sqlmodel import Field, SQLModel
 
 
 def utc_now() -> datetime:
-    """Return the current UTC timestamp."""
-    return datetime.now(UTC)
+    """Return the current timezone.utc timestamp."""
+    return datetime.now(timezone.utc)
 
 
 class TimestampMixin(SQLModel):

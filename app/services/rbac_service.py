@@ -1,4 +1,4 @@
-from datetime import UTC, datetime
+from datetime import timezone, datetime
 
 from sqlmodel import Session
 
@@ -75,7 +75,7 @@ def update_role_permissions(
         )
 
     role.permissions = permissions
-    role.updated_at = datetime.now(UTC)
+    role.updated_at = datetime.now(timezone.utc)
     saved_role = save_role(session, role)
 
     return RoleResponse.model_validate(saved_role)

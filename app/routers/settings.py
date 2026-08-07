@@ -1,3 +1,4 @@
+from typing import Optional, Union, Any
 from typing import Annotated
 
 from fastapi import APIRouter, Depends, status
@@ -32,7 +33,7 @@ router = APIRouter(
 def setting_list(
     session: Annotated[Session, Depends(get_session)],
     _admin: Annotated[User, Depends(require_permission("settings.read"))],
-    group: str | None = None,
+    group: Optional[str] = None,
 ) -> ApiResponse[list[SettingResponse]]:
     settings = list_settings(
         session,

@@ -1,4 +1,5 @@
-from datetime import UTC, datetime
+from typing import Optional, Union, Any
+from datetime import timezone, datetime
 
 from sqlalchemy.exc import IntegrityError
 from sqlmodel import Session
@@ -48,7 +49,7 @@ def ensure_variant_sku_is_unique(
     session: Session,
     *,
     sku: str,
-    current_variant_id: int | None = None,
+    current_variant_id: Optional[int] = None,
 ) -> None:
     product = get_product_by_sku(session, sku)
     variant = get_variant_by_sku(session, sku)
@@ -163,7 +164,7 @@ def update_existing_variant(
     for field, value in update_data.items():
         setattr(variant, field, value)
 
-    variant.updated_at = datetime.now(UTC)
+    variant.updated_at = datetime.now(timezone.utc)
     saved_variant = save_variant(session, variant)
 
     return ProductVariantResponse.model_validate(

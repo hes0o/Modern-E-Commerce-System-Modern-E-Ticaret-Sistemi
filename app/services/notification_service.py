@@ -1,4 +1,5 @@
-from datetime import UTC, datetime
+from typing import Optional, Union, Any
+from datetime import timezone, datetime
 
 from sqlmodel import Session
 
@@ -23,7 +24,7 @@ def list_notifications(
     session: Session,
     *,
     user_id: int,
-    notification_type: str | None,
+    notification_type: Optional[str],
     unread_only: bool,
 ) -> NotificationListResponse:
     notifications, total, unread_count = get_notifications(
@@ -92,7 +93,7 @@ def mark_notification_as_read(
         raise NotFoundError("Bildirim bulunamadı.")
 
     notification.is_read = True
-    notification.updated_at = datetime.now(UTC)
+    notification.updated_at = datetime.now(timezone.utc)
     saved_notification = save_notification(
         session,
         notification,
@@ -117,7 +118,7 @@ def mark_all_notifications_as_read(
     if not notifications:
         return 0
 
-    updated_at = datetime.now(UTC)
+    updated_at = datetime.now(timezone.utc)
 
     for notification in notifications:
         notification.is_read = True

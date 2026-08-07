@@ -1,4 +1,4 @@
-from datetime import UTC, datetime
+from datetime import timezone, datetime
 
 from sqlalchemy import extract, func
 from sqlmodel import Session, col, select
@@ -13,7 +13,7 @@ from app.models.user import User
 def get_dashboard_metrics(
     session: Session,
 ) -> dict:
-    today = datetime.now(UTC).date()
+    today = datetime.now(timezone.utc).date()
 
     active_order_condition = (
         col(Order.status) != OrderStatus.CANCELLED

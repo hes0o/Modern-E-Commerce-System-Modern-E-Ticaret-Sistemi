@@ -1,3 +1,4 @@
+from typing import Optional, Union, Any
 from sqlmodel import Session, col, select
 
 from app.models.cart import Cart, CartItem
@@ -6,7 +7,7 @@ from app.models.cart import Cart, CartItem
 def get_cart_by_user_id(
     session: Session,
     user_id: int,
-) -> Cart | None:
+) -> Optional[Cart]:
     statement = select(Cart).where(
         col(Cart.user_id) == user_id,
     )
@@ -16,7 +17,7 @@ def get_cart_by_user_id(
 def get_cart_by_session_token(
     session: Session,
     session_token: str,
-) -> Cart | None:
+) -> Optional[Cart]:
     statement = select(Cart).where(
         col(Cart.session_token) == session_token,
     )
@@ -40,7 +41,7 @@ def get_cart_item_by_id(
     *,
     cart_id: int,
     item_id: int,
-) -> CartItem | None:
+) -> Optional[CartItem]:
     statement = select(CartItem).where(
         col(CartItem.id) == item_id,
         col(CartItem.cart_id) == cart_id,
@@ -53,8 +54,8 @@ def get_matching_cart_item(
     *,
     cart_id: int,
     product_id: int,
-    variant_id: int | None,
-) -> CartItem | None:
+    variant_id: Optional[int],
+) -> Optional[CartItem]:
     statement = select(CartItem).where(
         col(CartItem.cart_id) == cart_id,
         col(CartItem.product_id) == product_id,

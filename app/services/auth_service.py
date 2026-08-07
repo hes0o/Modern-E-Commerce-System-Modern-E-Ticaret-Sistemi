@@ -1,4 +1,4 @@
-from datetime import UTC, datetime
+from datetime import timezone, datetime
 
 from sqlalchemy.exc import IntegrityError
 from sqlmodel import Session
@@ -70,7 +70,7 @@ def register_user(
         role_id=customer_role.id,
         is_active=True,
         newsletter_allowed=registration.newsletter_allowed,
-        kvkk_accepted_at=datetime.now(UTC),
+        kvkk_accepted_at=datetime.now(timezone.utc),
     )
 
     try:
@@ -120,7 +120,7 @@ def login_user(
             "Kullanıcı hesabı pasif durumdadır."
         )
 
-    user.last_login_at = datetime.now(UTC)
+    user.last_login_at = datetime.now(timezone.utc)
     session.add(user)
     session.commit()
     session.refresh(user)
@@ -167,7 +167,7 @@ def update_user_profile(
     for field, value in update_data.items():
         setattr(user, field, value)
 
-    user.updated_at = datetime.now(UTC)
+    user.updated_at = datetime.now(timezone.utc)
 
     try:
         session.add(user)
@@ -200,7 +200,7 @@ def change_user_password(
     user.password_hash = hash_password(
         payload.new_password
     )
-    user.updated_at = datetime.now(UTC)
+    user.updated_at = datetime.now(timezone.utc)
 
     session.add(user)
     session.commit()

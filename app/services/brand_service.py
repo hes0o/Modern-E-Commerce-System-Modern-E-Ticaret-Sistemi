@@ -1,4 +1,4 @@
-from datetime import UTC, datetime
+from datetime import timezone, datetime
 
 from sqlmodel import Session
 
@@ -94,7 +94,7 @@ def update_existing_brand(
     for field, value in update_data.items():
         setattr(brand, field, value)
 
-    brand.updated_at = datetime.now(UTC)
+    brand.updated_at = datetime.now(timezone.utc)
     saved_brand = save_brand(session, brand)
 
     return BrandResponse.model_validate(saved_brand)
@@ -110,7 +110,7 @@ def deactivate_brand(
         raise NotFoundError("Marka bulunamadı.")
 
     brand.is_active = False
-    brand.updated_at = datetime.now(UTC)
+    brand.updated_at = datetime.now(timezone.utc)
     saved_brand = save_brand(session, brand)
 
     return BrandResponse.model_validate(saved_brand)

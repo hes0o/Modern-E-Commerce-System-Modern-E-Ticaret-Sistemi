@@ -1,3 +1,4 @@
+from typing import Optional, Union, Any
 from sqlmodel import Session, col, select
 
 from app.models.setting import Setting
@@ -6,7 +7,7 @@ from app.models.setting import Setting
 def get_settings(
     session: Session,
     *,
-    group: str | None = None,
+    group: Optional[str] = None,
 ) -> list[Setting]:
     statement = select(Setting)
 
@@ -25,14 +26,14 @@ def get_settings(
 def get_setting_by_id(
     session: Session,
     setting_id: int,
-) -> Setting | None:
+) -> Optional[Setting]:
     return session.get(Setting, setting_id)
 
 
 def get_setting_by_key(
     session: Session,
     key: str,
-) -> Setting | None:
+) -> Optional[Setting]:
     statement = select(Setting).where(
         col(Setting.key) == key,
     )

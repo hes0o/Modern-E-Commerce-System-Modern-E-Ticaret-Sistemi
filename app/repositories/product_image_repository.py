@@ -1,3 +1,4 @@
+from typing import Optional, Union, Any
 from sqlmodel import Session, col, select
 
 from app.models.product import ProductImage
@@ -25,7 +26,7 @@ def get_image_by_id_and_product_id(
     *,
     image_id: int,
     product_id: int,
-) -> ProductImage | None:
+) -> Optional[ProductImage]:
     statement = select(ProductImage).where(
         col(ProductImage.id) == image_id,
         col(ProductImage.product_id) == product_id,

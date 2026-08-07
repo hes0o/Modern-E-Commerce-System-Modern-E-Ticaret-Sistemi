@@ -1,3 +1,4 @@
+from typing import Optional, Union, Any
 from sqlmodel import Session, col, select
 
 from app.models.category import Category
@@ -26,14 +27,14 @@ def get_categories(
 def get_category_by_id(
     session: Session,
     category_id: int,
-) -> Category | None:
+) -> Optional[Category]:
     return session.get(Category, category_id)
 
 
 def get_category_by_slug(
     session: Session,
     slug: str,
-) -> Category | None:
+) -> Optional[Category]:
     statement = select(Category).where(
         col(Category.slug) == slug,
     )

@@ -1,3 +1,4 @@
+from typing import Optional, Union, Any
 from sqlalchemy import func, or_
 from sqlmodel import Session, col, select
 
@@ -8,7 +9,7 @@ def get_notifications(
     session: Session,
     *,
     user_id: int,
-    notification_type: str | None = None,
+    notification_type: Optional[str] = None,
     unread_only: bool = False,
 ) -> tuple[list[Notification], int, int]:
     visibility_condition = or_(
@@ -72,7 +73,7 @@ def get_visible_notification_by_id(
     *,
     notification_id: int,
     user_id: int,
-) -> Notification | None:
+) -> Optional[Notification]:
     statement = select(Notification).where(
         col(Notification.id) == notification_id,
         or_(

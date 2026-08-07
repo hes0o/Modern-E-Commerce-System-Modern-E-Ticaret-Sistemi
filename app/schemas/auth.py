@@ -1,3 +1,4 @@
+from typing import Optional, Union, Any
 from datetime import datetime
 
 from pydantic import (
@@ -14,7 +15,7 @@ class UserRegister(BaseModel):
         max_length=150,
     )
     email: EmailStr
-    phone: str | None = Field(
+    phone: Optional[str] = Field(
         default=None,
         min_length=7,
         max_length=20,
@@ -58,7 +59,7 @@ class UserResponse(BaseModel):
     id: int
     name: str
     email: EmailStr
-    phone: str | None
+    phone: Optional[str]
     role: str
     is_active: bool
     newsletter_allowed: bool
@@ -71,19 +72,19 @@ class TokenResponse(BaseModel):
     expires_in: int
 
 class UserProfileUpdate(BaseModel):
-    name: str | None = Field(
+    name: Optional[str] = Field(
         default=None,
         min_length=2,
         max_length=150,
     )
-    email: EmailStr | None = None
-    phone: str | None = Field(
+    email: Optional[EmailStr] = None
+    phone: Optional[str] = Field(
         default=None,
         min_length=7,
         max_length=20,
         pattern=r"^[0-9+\s()-]+$",
     )
-    newsletter_allowed: bool | None = None
+    newsletter_allowed: Optional[bool] = None
 
 
 class PasswordChange(BaseModel):

@@ -1,3 +1,4 @@
+from typing import Optional, Union, Any
 from datetime import datetime
 
 from pydantic import BaseModel, ConfigDict, Field
@@ -9,20 +10,20 @@ class SettingCreate(BaseModel):
         max_length=100,
         pattern=r"^[a-z0-9_.-]+$",
     )
-    value: str | None = Field(default=None, max_length=5000)
-    group: str | None = Field(default=None, max_length=50)
+    value: Optional[str] = Field(default=None, max_length=5000)
+    group: Optional[str] = Field(default=None, max_length=50)
 
 
 class SettingUpdate(BaseModel):
-    value: str | None = Field(default=None, max_length=5000)
-    group: str | None = Field(default=None, max_length=50)
+    value: Optional[str] = Field(default=None, max_length=5000)
+    group: Optional[str] = Field(default=None, max_length=50)
 
 
 class SettingResponse(BaseModel):
     id: int
     key: str
-    value: str | None
-    group: str | None
+    value: Optional[str]
+    group: Optional[str]
     created_at: datetime
     updated_at: datetime
 

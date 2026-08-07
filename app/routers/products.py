@@ -1,3 +1,4 @@
+from typing import Optional, Union, Any
 from typing import Annotated
 
 from fastapi import APIRouter, Depends, Query, status
@@ -42,11 +43,11 @@ def get_product_list(
     page: Annotated[int, Query(ge=1)] = 1,
     page_size: Annotated[int, Query(ge=1, le=100)] = 20,
     search: Annotated[
-        str | None,
+        Optional[str],
         Query(min_length=1, max_length=200),
     ] = None,
     category_id: Annotated[
-        int | None,
+        Optional[int],
         Query(gt=0),
     ] = None,
 ) -> ApiResponse[ProductListResponse]:

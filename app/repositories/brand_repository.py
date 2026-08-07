@@ -1,3 +1,4 @@
+from typing import Optional, Union, Any
 from sqlmodel import Session, col, select
 
 from app.models.brand import Brand
@@ -21,14 +22,14 @@ def get_brands(
 def get_brand_by_id(
     session: Session,
     brand_id: int,
-) -> Brand | None:
+) -> Optional[Brand]:
     return session.get(Brand, brand_id)
 
 
 def get_brand_by_name(
     session: Session,
     name: str,
-) -> Brand | None:
+) -> Optional[Brand]:
     statement = select(Brand).where(
         col(Brand.name) == name,
     )

@@ -1,3 +1,4 @@
+from typing import Optional, Union, Any
 from typing import Annotated
 
 from fastapi import APIRouter, Depends, Query
@@ -63,9 +64,9 @@ def stock_movement_list(
     ],
     page: Annotated[int, Query(ge=1)] = 1,
     page_size: Annotated[int, Query(ge=1, le=100)] = 20,
-    product_id: int | None = None,
-    variant_id: int | None = None,
-    movement_type: StockMovementType | None = None,
+    product_id: Optional[int] = None,
+    variant_id: Optional[int] = None,
+    movement_type: Optional[StockMovementType] = None,
 ) -> ApiResponse[StockMovementListResponse]:
     movements = list_stock_movements(
         session,

@@ -1,3 +1,4 @@
+from typing import Optional, Union, Any
 from sqlmodel import Session
 
 from app.core.exceptions import NotFoundError
@@ -49,7 +50,7 @@ def get_user_address(
 def remove_default_from_other_addresses(
     addresses: list[Address],
     *,
-    excluded_address_id: int | None = None,
+    excluded_address_id: Optional[int] = None,
 ) -> list[Address]:
     changed_addresses: list[Address] = []
 

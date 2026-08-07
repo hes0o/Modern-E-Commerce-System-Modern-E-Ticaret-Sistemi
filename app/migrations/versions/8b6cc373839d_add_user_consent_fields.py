@@ -1,3 +1,4 @@
+from typing import Optional, Union, Any
 """Add user consent fields.
 
 Revision ID: 8b6cc373839d
@@ -11,9 +12,9 @@ import sqlalchemy as sa
 from alembic import op
 
 revision: str = "8b6cc373839d"
-down_revision: str | None = "002"
-branch_labels: str | Sequence[str] | None = None
-depends_on: str | Sequence[str] | None = None
+down_revision: Optional[str] = "002"
+branch_labels: Union[str, Optional[Sequence[str]]] = None
+depends_on: Union[str, Optional[Sequence[str]]] = None
 
 
 def upgrade() -> None:

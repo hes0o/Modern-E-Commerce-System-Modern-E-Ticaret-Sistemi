@@ -1,3 +1,4 @@
+from typing import Optional, Union, Any
 from sqlmodel import Session, col, select
 
 from app.models.favorite import Favorite
@@ -20,7 +21,7 @@ def get_favorite_by_user_and_product(
     *,
     user_id: int,
     product_id: int,
-) -> Favorite | None:
+) -> Optional[Favorite]:
     statement = select(Favorite).where(
         col(Favorite.user_id) == user_id,
         col(Favorite.product_id) == product_id,
@@ -33,7 +34,7 @@ def get_favorite_by_id_and_user_id(
     *,
     favorite_id: int,
     user_id: int,
-) -> Favorite | None:
+) -> Optional[Favorite]:
     statement = select(Favorite).where(
         col(Favorite.id) == favorite_id,
         col(Favorite.user_id) == user_id,

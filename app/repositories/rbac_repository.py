@@ -1,3 +1,4 @@
+from typing import Optional, Union, Any
 from sqlalchemy.orm import selectinload
 from sqlmodel import Session, col, select
 
@@ -18,7 +19,7 @@ def get_roles_with_permissions(
 def get_role_with_permissions(
     session: Session,
     role_id: int,
-) -> Role | None:
+) -> Optional[Role]:
     statement = (
         select(Role)
         .where(Role.id == role_id)

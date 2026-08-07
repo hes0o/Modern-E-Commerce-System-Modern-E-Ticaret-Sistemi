@@ -1,3 +1,4 @@
+from typing import Optional, Union, Any
 from sqlalchemy import func, or_
 from sqlmodel import Session, col, select
 
@@ -10,9 +11,9 @@ def get_products(
     *,
     page: int = 1,
     page_size: int = 20,
-    search: str | None = None,
-    category_id: int | None = None,
-    status: ProductStatus | None = ProductStatus.PUBLISHED,
+    search: Optional[str] = None,
+    category_id: Optional[int] = None,
+    status: Optional[ProductStatus] = ProductStatus.PUBLISHED,
 ) -> tuple[list[Product], int]:
     statement = select(Product)
     count_statement = select(func.count()).select_from(Product)
@@ -60,14 +61,14 @@ def get_products(
 def get_product_by_id(
     session: Session,
     product_id: int,
-) -> Product | None:
+) -> Optional[Product]:
     return session.get(Product, product_id)
 
 
 def get_product_by_slug(
     session: Session,
     slug: str,
-) -> Product | None:
+) -> Optional[Product]:
     statement = select(Product).where(
         col(Product.slug) == slug,
     )
@@ -77,7 +78,7 @@ def get_product_by_slug(
 def get_product_by_sku(
     session: Session,
     sku: str,
-) -> Product | None:
+) -> Optional[Product]:
     statement = select(Product).where(
         col(Product.sku) == sku,
     )
@@ -87,7 +88,7 @@ def get_product_by_sku(
 def get_product_by_barcode(
     session: Session,
     barcode: str,
-) -> Product | None:
+) -> Optional[Product]:
     statement = select(Product).where(
         col(Product.barcode) == barcode,
     )

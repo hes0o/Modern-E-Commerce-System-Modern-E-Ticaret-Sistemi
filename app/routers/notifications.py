@@ -1,3 +1,4 @@
+from typing import Optional, Union, Any
 from typing import Annotated
 
 from fastapi import APIRouter, Depends, Query, status
@@ -33,7 +34,7 @@ router = APIRouter(
 def notification_list(
     session: Annotated[Session, Depends(get_session)],
     admin: Annotated[User, Depends(require_permission("notification.read"))],
-    notification_type: str | None = None,
+    notification_type: Optional[str] = None,
     unread_only: Annotated[bool, Query()] = False,
 ) -> ApiResponse[NotificationListResponse]:
     notifications = list_notifications(

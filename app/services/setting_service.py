@@ -1,4 +1,5 @@
-from datetime import UTC, datetime
+from typing import Optional, Union, Any
+from datetime import timezone, datetime
 
 from sqlmodel import Session
 
@@ -48,7 +49,7 @@ def ensure_setting_is_not_sensitive(
 def list_settings(
     session: Session,
     *,
-    group: str | None,
+    group: Optional[str],
 ) -> list[SettingResponse]:
     settings = get_settings(
         session,
@@ -113,7 +114,7 @@ def update_existing_setting(
     for field, value in update_data.items():
         setattr(setting, field, value)
 
-    setting.updated_at = datetime.now(UTC)
+    setting.updated_at = datetime.now(timezone.utc)
     saved_setting = save_setting(session, setting)
 
     return SettingResponse.model_validate(

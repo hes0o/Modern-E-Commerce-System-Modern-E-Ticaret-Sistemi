@@ -1,4 +1,5 @@
-from datetime import UTC, datetime
+from typing import Optional, Union, Any
+from datetime import timezone, datetime
 
 from sqlmodel import Session
 
@@ -45,9 +46,9 @@ def list_admin_users(
     *,
     page: int,
     page_size: int,
-    search: str | None,
-    role_name: str | None,
-    is_active: bool | None,
+    search: Optional[str],
+    role_name: Optional[str],
+    is_active: Optional[bool],
 ) -> AdminUserListResponse:
     users, total = get_admin_users(
         session,
@@ -162,7 +163,7 @@ def update_admin_user(
     for field, value in update_data.items():
         setattr(user, field, value)
 
-    user.updated_at = datetime.now(UTC)
+    user.updated_at = datetime.now(timezone.utc)
     saved_user = save_admin_user(session, user)
 
     return to_admin_user_response(saved_user)

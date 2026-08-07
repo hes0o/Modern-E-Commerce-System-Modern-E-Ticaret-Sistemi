@@ -1,3 +1,4 @@
+from typing import Optional, Union, Any
 from sqlmodel import Session
 
 from app.core.exceptions import (
@@ -50,7 +51,7 @@ def validate_category(
 
 def validate_brand(
     session: Session,
-    brand_id: int | None,
+    brand_id: Optional[int],
 ) -> None:
     if brand_id is None:
         return
@@ -71,8 +72,8 @@ def ensure_product_fields_are_unique(
     *,
     sku: str,
     slug: str,
-    barcode: str | None,
-    current_product_id: int | None = None,
+    barcode: Optional[str],
+    current_product_id: Optional[int] = None,
 ) -> None:
     product_with_sku = get_product_by_sku(session, sku)
 
@@ -113,7 +114,7 @@ def ensure_product_fields_are_unique(
 
 def validate_price_rules(
     price: float,
-    discount_price: float | None,
+    discount_price: Optional[float],
 ) -> None:
     if (
         discount_price is not None
@@ -127,7 +128,7 @@ def validate_price_rules(
 def validate_stock_rules(
     *,
     has_variants: bool,
-    stock: int | None,
+    stock: Optional[int],
 ) -> None:
     if has_variants and stock is not None:
         raise BusinessRuleError(
@@ -145,8 +146,8 @@ def list_products(
     *,
     page: int,
     page_size: int,
-    search: str | None,
-    category_id: int | None,
+    search: Optional[str],
+    category_id: Optional[int],
 ) -> ProductListResponse:
     products, total = get_products(
         session,

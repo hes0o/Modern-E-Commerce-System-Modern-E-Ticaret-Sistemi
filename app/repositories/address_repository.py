@@ -1,3 +1,4 @@
+from typing import Optional, Union, Any
 from sqlmodel import Session, col, select
 
 from app.models.address import Address
@@ -23,7 +24,7 @@ def get_address_by_id_and_user_id(
     *,
     address_id: int,
     user_id: int,
-) -> Address | None:
+) -> Optional[Address]:
     statement = select(Address).where(
         col(Address.id) == address_id,
         col(Address.user_id) == user_id,

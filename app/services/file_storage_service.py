@@ -1,3 +1,4 @@
+from typing import Optional, Union, Any
 from io import BytesIO
 from pathlib import Path
 from typing import Literal
@@ -107,7 +108,7 @@ async def save_image(
     return f"/uploads/{folder}/{safe_filename}"
 
 
-def delete_stored_image(image_path: str | None) -> None:
+def delete_stored_image(image_path: Optional[str]) -> None:
     if not image_path or not image_path.startswith("/uploads/"):
         return
 

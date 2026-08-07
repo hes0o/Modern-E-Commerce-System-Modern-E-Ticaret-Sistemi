@@ -1,3 +1,4 @@
+from typing import Optional, Union, Any
 from datetime import datetime
 
 from pydantic import BaseModel, ConfigDict, Field
@@ -6,7 +7,7 @@ from pydantic import BaseModel, ConfigDict, Field
 class PermissionResponse(BaseModel):
     id: int
     name: str
-    description: str | None
+    description: Optional[str]
     created_at: datetime
 
     model_config = ConfigDict(from_attributes=True)
@@ -15,7 +16,7 @@ class PermissionResponse(BaseModel):
 class RoleResponse(BaseModel):
     id: int
     name: str
-    description: str | None
+    description: Optional[str]
     permissions: list[PermissionResponse]
     created_at: datetime
     updated_at: datetime

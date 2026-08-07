@@ -1,3 +1,4 @@
+from typing import Optional, Union, Any
 from sqlalchemy import func
 from sqlmodel import Session, col, select
 
@@ -10,9 +11,9 @@ def get_stock_movements(
     *,
     page: int,
     page_size: int,
-    product_id: int | None = None,
-    variant_id: int | None = None,
-    movement_type: StockMovementType | None = None,
+    product_id: Optional[int] = None,
+    variant_id: Optional[int] = None,
+    movement_type: Optional[StockMovementType] = None,
 ) -> tuple[list[StockMovement], int]:
     statement = select(StockMovement)
     count_statement = (

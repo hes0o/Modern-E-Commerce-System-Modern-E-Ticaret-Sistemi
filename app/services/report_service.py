@@ -1,5 +1,5 @@
 import csv
-from datetime import UTC, date, datetime, time, timedelta
+from datetime import timezone, date, datetime, time, timedelta
 from io import StringIO
 
 from sqlmodel import Session
@@ -40,12 +40,12 @@ def generate_sales_report(
     start_at = datetime.combine(
         date_from,
         time.min,
-        tzinfo=UTC,
+        tzinfo=timezone.utc,
     )
     end_at = datetime.combine(
         date_to + timedelta(days=1),
         time.min,
-        tzinfo=UTC,
+        tzinfo=timezone.utc,
     )
 
     totals, daily_rows = get_sales_report_data(

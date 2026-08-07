@@ -1,3 +1,4 @@
+from typing import Optional, Union, Any
 from typing import Annotated
 
 from fastapi import APIRouter, Depends, Query, status
@@ -36,9 +37,9 @@ def admin_user_list(
     _admin: Annotated[User, Depends(require_permission("user.read"))],
     page: Annotated[int, Query(ge=1)] = 1,
     page_size: Annotated[int, Query(ge=1, le=100)] = 20,
-    search: str | None = None,
-    role_name: AdminRoleName | None = None,
-    is_active: bool | None = None,
+    search: Optional[str] = None,
+    role_name: Optional[AdminRoleName] = None,
+    is_active: Optional[bool] = None,
 ) -> ApiResponse[AdminUserListResponse]:
     users = list_admin_users(
         session,

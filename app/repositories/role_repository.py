@@ -1,3 +1,4 @@
+from typing import Optional, Union, Any
 from sqlmodel import Session, select
 
 from app.models.rbac import Role
@@ -6,7 +7,7 @@ from app.models.rbac import Role
 def get_role_by_name(
     session: Session,
     role_name: str,
-) -> Role | None:
+) -> Optional[Role]:
     statement = select(Role).where(
         Role.name == role_name
     )

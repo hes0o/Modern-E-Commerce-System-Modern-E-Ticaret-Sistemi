@@ -1,3 +1,4 @@
+from typing import Optional, Union, Any
 from typing import Annotated
 
 from fastapi import APIRouter, Depends, Header
@@ -27,7 +28,7 @@ router = APIRouter(
 
 
 SessionToken = Annotated[
-    str | None,
+    Optional[str],
     Header(
         alias="X-Session-Token",
         max_length=100,
@@ -42,7 +43,7 @@ SessionToken = Annotated[
 def get_cart(
     session: Annotated[Session, Depends(get_session)],
     current_user: Annotated[
-        User | None,
+        Optional[User],
         Depends(get_optional_current_user),
     ],
     session_token: SessionToken = None,
@@ -68,7 +69,7 @@ def add_cart_item(
     item_data: CartItemAdd,
     session: Annotated[Session, Depends(get_session)],
     current_user: Annotated[
-        User | None,
+        Optional[User],
         Depends(get_optional_current_user),
     ],
     session_token: SessionToken = None,
@@ -96,7 +97,7 @@ def update_cart_item(
     item_data: CartItemUpdate,
     session: Annotated[Session, Depends(get_session)],
     current_user: Annotated[
-        User | None,
+        Optional[User],
         Depends(get_optional_current_user),
     ],
     session_token: SessionToken = None,
@@ -124,7 +125,7 @@ def delete_cart_item(
     item_id: int,
     session: Annotated[Session, Depends(get_session)],
     current_user: Annotated[
-        User | None,
+        Optional[User],
         Depends(get_optional_current_user),
     ],
     session_token: SessionToken = None,
@@ -150,7 +151,7 @@ def delete_cart_item(
 def delete_all_cart_items(
     session: Annotated[Session, Depends(get_session)],
     current_user: Annotated[
-        User | None,
+        Optional[User],
         Depends(get_optional_current_user),
     ],
     session_token: SessionToken = None,

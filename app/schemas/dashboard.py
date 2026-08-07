@@ -1,3 +1,4 @@
+from typing import Optional, Union, Any
 from pydantic import BaseModel
 
 
@@ -11,7 +12,7 @@ class TopSellingProduct(BaseModel):
     product_name: str
     quantity_sold: int
     revenue: float
-    stock: int | None
+    stock: Optional[int]
 
 
 class DashboardSummary(BaseModel):

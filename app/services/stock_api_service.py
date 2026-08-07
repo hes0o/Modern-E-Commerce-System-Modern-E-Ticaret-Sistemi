@@ -1,3 +1,4 @@
+from typing import Optional, Union, Any
 from sqlalchemy.exc import NoResultFound
 from sqlmodel import Session
 
@@ -113,9 +114,9 @@ def list_stock_movements(
     *,
     page: int,
     page_size: int,
-    product_id: int | None,
-    variant_id: int | None,
-    movement_type: StockMovementType | None,
+    product_id: Optional[int],
+    variant_id: Optional[int],
+    movement_type: Optional[StockMovementType],
 ) -> StockMovementListResponse:
     movements, total = get_stock_movements(
         session,

@@ -1,9 +1,10 @@
+from typing import Optional, Union, Any
 class AppError(Exception):
     def __init__(
         self,
         message: str,
         status_code: int,
-        errors: list[dict] | None = None,
+        errors: Optional[list[dict]] = None,
     ) -> None:
         self.message = message
         self.status_code = status_code
@@ -49,7 +50,7 @@ class ConflictError(AppError):
     def __init__(
         self,
         message: str,
-        errors: list[dict] | None = None,
+        errors: Optional[list[dict]] = None,
     ) -> None:
         super().__init__(
             message=message,
@@ -62,7 +63,7 @@ class BusinessRuleError(AppError):
     def __init__(
         self,
         message: str,
-        errors: list[dict] | None = None,
+        errors: Optional[list[dict]] = None,
     ) -> None:
         super().__init__(
             message=message,

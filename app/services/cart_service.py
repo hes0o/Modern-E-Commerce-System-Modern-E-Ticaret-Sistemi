@@ -1,3 +1,4 @@
+from typing import Optional, Union, Any
 import secrets
 
 from sqlmodel import Session
@@ -32,8 +33,8 @@ from app.schemas.cart import (
 def get_or_create_cart(
     session: Session,
     *,
-    current_user: User | None,
-    session_token: str | None,
+    current_user: Optional[User],
+    session_token: Optional[str],
 ) -> Cart:
     if current_user is not None:
         cart = get_cart_by_user_id(
@@ -70,8 +71,8 @@ def get_product_and_variant(
     session: Session,
     *,
     product_id: int,
-    variant_id: int | None,
-) -> tuple[Product, ProductVariant | None]:
+    variant_id: Optional[int],
+) -> tuple[Product, Optional[ProductVariant]]:
     product = session.get(Product, product_id)
 
     if (
@@ -113,7 +114,7 @@ def get_product_and_variant(
 
 def get_stock_and_prices(
     product: Product,
-    variant: ProductVariant | None,
+    variant: Optional[ProductVariant],
 ) -> tuple[int, float, float]:
     if variant is not None:
         stock = variant.stock
@@ -244,8 +245,8 @@ def build_cart_response(
 def get_cart_response(
     session: Session,
     *,
-    current_user: User | None,
-    session_token: str | None,
+    current_user: Optional[User],
+    session_token: Optional[str],
 ) -> CartResponse:
     cart = get_or_create_cart(
         session,
@@ -258,8 +259,8 @@ def get_cart_response(
 def add_item_to_cart(
     session: Session,
     *,
-    current_user: User | None,
-    session_token: str | None,
+    current_user: Optional[User],
+    session_token: Optional[str],
     item_data: CartItemAdd,
 ) -> CartResponse:
     cart = get_or_create_cart(
@@ -318,8 +319,8 @@ def add_item_to_cart(
 def update_cart_item_quantity(
     session: Session,
     *,
-    current_user: User | None,
-    session_token: str | None,
+    current_user: Optional[User],
+    session_token: Optional[str],
     item_id: int,
     quantity: int,
 ) -> CartResponse:
@@ -369,8 +370,8 @@ def update_cart_item_quantity(
 def remove_item_from_cart(
     session: Session,
     *,
-    current_user: User | None,
-    session_token: str | None,
+    current_user: Optional[User],
+    session_token: Optional[str],
     item_id: int,
 ) -> CartResponse:
     cart = get_or_create_cart(
@@ -403,8 +404,8 @@ def remove_item_from_cart(
 def clear_cart(
     session: Session,
     *,
-    current_user: User | None,
-    session_token: str | None,
+    current_user: Optional[User],
+    session_token: Optional[str],
 ) -> CartResponse:
     cart = get_or_create_cart(
         session,

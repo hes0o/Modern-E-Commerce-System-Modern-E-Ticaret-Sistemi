@@ -1,3 +1,4 @@
+from typing import Optional, Union, Any
 from sqlalchemy import func
 from sqlalchemy.orm import selectinload
 from sqlmodel import Session, col, select
@@ -9,7 +10,7 @@ from app.models.order import Order
 def get_order_by_id(
     session: Session,
     order_id: int,
-) -> Order | None:
+) -> Optional[Order]:
     statement = (
         select(Order)
         .where(Order.id == order_id)
@@ -24,7 +25,7 @@ def get_order_by_id(
 def get_order_by_number(
     session: Session,
     order_number: str,
-) -> Order | None:
+) -> Optional[Order]:
     statement = (
         select(Order)
         .where(Order.order_number == order_number)
@@ -73,7 +74,7 @@ def get_all_orders(
     *,
     page: int,
     page_size: int,
-    order_status: OrderStatus | None = None,
+    order_status: Optional[OrderStatus] = None,
 ) -> tuple[list[Order], int]:
     statement = select(Order).options(
         selectinload(Order.items),

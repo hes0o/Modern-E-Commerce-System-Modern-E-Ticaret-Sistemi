@@ -1,3 +1,4 @@
+from typing import Optional, Union, Any
 from typing import Annotated
 
 import jwt
@@ -24,14 +25,14 @@ bearer_scheme = HTTPBearer(
 
 def get_optional_current_user(
     credentials: Annotated[
-        HTTPAuthorizationCredentials | None,
+        Optional[HTTPAuthorizationCredentials],
         Depends(bearer_scheme),
     ],
     session: Annotated[
         Session,
         Depends(get_session),
     ],
-) -> User | None:
+) -> Optional[User]:
     if credentials is None:
         return None
 
@@ -77,7 +78,7 @@ def get_optional_current_user(
 
 def get_current_user(
     current_user: Annotated[
-        User | None,
+        Optional[User],
         Depends(get_optional_current_user),
     ],
 ) -> User:

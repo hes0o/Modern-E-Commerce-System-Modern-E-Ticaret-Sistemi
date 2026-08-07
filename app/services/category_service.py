@@ -1,3 +1,4 @@
+from typing import Optional, Union, Any
 import re
 import unicodedata
 
@@ -74,9 +75,9 @@ def get_category(
 
 def validate_parent(
     session: Session,
-    parent_id: int | None,
+    parent_id: Optional[int],
     *,
-    current_category_id: int | None = None,
+    current_category_id: Optional[int] = None,
 ) -> None:
     if parent_id is None:
         return
@@ -117,7 +118,7 @@ def ensure_slug_is_available(
     session: Session,
     slug: str,
     *,
-    current_category_id: int | None = None,
+    current_category_id: Optional[int] = None,
 ) -> None:
     existing_category = get_category_by_slug(session, slug)
 

@@ -1,3 +1,4 @@
+from typing import Optional, Union, Any
 from typing import Annotated
 
 from fastapi import APIRouter, Depends, Header, Query, status
@@ -46,11 +47,11 @@ def checkout(
     payload: OrderCreate,
     session: Annotated[Session, Depends(get_session)],
     current_user: Annotated[
-        User | None,
+        Optional[User],
         Depends(get_optional_current_user),
     ],
         session_token: Annotated[
-        str | None,
+        Optional[str],
         Header(
             alias="X-Session-Token",
             max_length=100,
@@ -153,7 +154,7 @@ def admin_orders(
     ],
     page: Annotated[int, Query(ge=1)] = 1,
     page_size: Annotated[int, Query(ge=1, le=100)] = 20,
-    order_status: OrderStatus | None = None,
+    order_status: Optional[OrderStatus] = None,
 ) -> ApiResponse[OrderListResponse]:
     orders = list_admin_orders(
         session,

@@ -1,4 +1,5 @@
-from datetime import UTC, datetime
+from typing import Optional, Union, Any
+from datetime import timezone, datetime
 
 from sqlmodel import Session
 
@@ -60,8 +61,8 @@ def create_checkout_order(
     session: Session,
     *,
     payload: OrderCreate,
-    current_user: User | None,
-    session_token: str | None,
+    current_user: Optional[User],
+    session_token: Optional[str],
 ) -> OrderResponse:
     if current_user is not None:
         cart = get_cart_by_user_id(session, current_user.id)
@@ -274,7 +275,7 @@ def cancel_my_order(
     *,
     order_id: int,
     user_id: int,
-    note: str | None,
+    note: Optional[str],
 ) -> OrderResponse:
     order = get_order_by_id(session, order_id)
 
@@ -313,7 +314,7 @@ def change_order_status(
     order_id: int,
     new_status: OrderStatus,
     changed_by_user_id: int,
-    note: str | None,
+    note: Optional[str],
 ) -> OrderResponse:
     order = get_order_by_id(session, order_id)
 
@@ -365,7 +366,7 @@ def update_order_admin_details(
     for field, value in update_data.items():
         setattr(order, field, value)
 
-    order.updated_at = datetime.now(UTC)
+    order.updated_at = datetime.now(timezone.utc)
     session.add(order)
     session.commit()
 

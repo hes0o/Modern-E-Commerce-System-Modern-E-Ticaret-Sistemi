@@ -1,3 +1,4 @@
+from typing import Optional, Union, Any
 from datetime import datetime
 
 from pydantic import BaseModel, Field
@@ -5,7 +6,7 @@ from pydantic import BaseModel, Field
 
 class CartItemAdd(BaseModel):
     product_id: int = Field(gt=0)
-    variant_id: int | None = Field(default=None, gt=0)
+    variant_id: Optional[int] = Field(default=None, gt=0)
     quantity: int = Field(default=1, ge=1, le=100)
 
 
@@ -16,7 +17,7 @@ class CartItemUpdate(BaseModel):
 class CartItemResponse(BaseModel):
     id: int
     product_id: int
-    variant_id: int | None
+    variant_id: Optional[int]
     product_name: str
     product_slug: str
     sku: str
@@ -30,7 +31,7 @@ class CartItemResponse(BaseModel):
 
 class CartResponse(BaseModel):
     id: int
-    session_token: str | None
+    session_token: Optional[str]
     items: list[CartItemResponse]
     total_quantity: int
     subtotal: float

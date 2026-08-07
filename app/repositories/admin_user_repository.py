@@ -1,3 +1,4 @@
+from typing import Optional, Union, Any
 from sqlalchemy import func, or_
 from sqlalchemy.orm import selectinload
 from sqlmodel import Session, col, select
@@ -11,9 +12,9 @@ def get_admin_users(
     *,
     page: int,
     page_size: int,
-    search: str | None = None,
-    role_name: str | None = None,
-    is_active: bool | None = None,
+    search: Optional[str] = None,
+    role_name: Optional[str] = None,
+    is_active: Optional[bool] = None,
 ) -> tuple[list[User], int]:
     statement = (
         select(User)
@@ -61,7 +62,7 @@ def get_admin_users(
 def get_admin_user_by_id(
     session: Session,
     user_id: int,
-) -> User | None:
+) -> Optional[User]:
     statement = (
         select(User)
         .where(User.id == user_id)

@@ -1,3 +1,4 @@
+from typing import Optional, Union, Any
 from datetime import datetime
 
 from pydantic import BaseModel, ConfigDict, Field, model_validator
@@ -7,28 +8,28 @@ from app.models.enums import ProductStatus
 
 class ProductCreate(BaseModel):
     category_id: int = Field(gt=0)
-    brand_id: int | None = Field(default=None, gt=0)
+    brand_id: Optional[int] = Field(default=None, gt=0)
     sku: str = Field(min_length=2, max_length=60)
-    barcode: str | None = Field(default=None, max_length=60)
+    barcode: Optional[str] = Field(default=None, max_length=60)
     name: str = Field(min_length=2, max_length=200)
-    slug: str | None = Field(default=None, max_length=220)
+    slug: Optional[str] = Field(default=None, max_length=220)
     short_description: str = Field(
         min_length=2,
         max_length=500,
     )
     long_description: str = Field(min_length=2)
-    seo_title: str | None = Field(default=None, max_length=200)
-    seo_description: str | None = Field(
+    seo_title: Optional[str] = Field(default=None, max_length=200)
+    seo_description: Optional[str] = Field(
         default=None,
         max_length=300,
     )
     price: float = Field(gt=0)
-    discount_price: float | None = Field(default=None, gt=0)
+    discount_price: Optional[float] = Field(default=None, gt=0)
     vat_rate: float = Field(default=20, ge=0, le=100)
     status: ProductStatus = ProductStatus.DRAFT
     has_variants: bool = False
-    stock: int | None = Field(default=0, ge=0)
-    min_stock_level: int | None = Field(default=0, ge=0)
+    stock: Optional[int] = Field(default=0, ge=0)
+    min_stock_level: Optional[int] = Field(default=0, ge=0)
     is_new: bool = False
     is_bestseller: bool = False
     is_featured: bool = False
@@ -58,66 +59,66 @@ class ProductCreate(BaseModel):
 
 
 class ProductUpdate(BaseModel):
-    category_id: int | None = Field(default=None, gt=0)
-    brand_id: int | None = Field(default=None, gt=0)
-    sku: str | None = Field(
+    category_id: Optional[int] = Field(default=None, gt=0)
+    brand_id: Optional[int] = Field(default=None, gt=0)
+    sku: Optional[str] = Field(
         default=None,
         min_length=2,
         max_length=60,
     )
-    barcode: str | None = Field(default=None, max_length=60)
-    name: str | None = Field(
+    barcode: Optional[str] = Field(default=None, max_length=60)
+    name: Optional[str] = Field(
         default=None,
         min_length=2,
         max_length=200,
     )
-    slug: str | None = Field(default=None, max_length=220)
-    short_description: str | None = Field(
+    slug: Optional[str] = Field(default=None, max_length=220)
+    short_description: Optional[str] = Field(
         default=None,
         min_length=2,
         max_length=500,
     )
-    long_description: str | None = Field(
+    long_description: Optional[str] = Field(
         default=None,
         min_length=2,
     )
-    seo_title: str | None = Field(default=None, max_length=200)
-    seo_description: str | None = Field(
+    seo_title: Optional[str] = Field(default=None, max_length=200)
+    seo_description: Optional[str] = Field(
         default=None,
         max_length=300,
     )
-    price: float | None = Field(default=None, gt=0)
-    discount_price: float | None = Field(default=None, gt=0)
-    vat_rate: float | None = Field(default=None, ge=0, le=100)
-    status: ProductStatus | None = None
-    has_variants: bool | None = None
-    stock: int | None = Field(default=None, ge=0)
-    min_stock_level: int | None = Field(default=None, ge=0)
-    is_new: bool | None = None
-    is_bestseller: bool | None = None
-    is_featured: bool | None = None
-    is_campaign: bool | None = None
+    price: Optional[float] = Field(default=None, gt=0)
+    discount_price: Optional[float] = Field(default=None, gt=0)
+    vat_rate: Optional[float] = Field(default=None, ge=0, le=100)
+    status: Optional[ProductStatus] = None
+    has_variants: Optional[bool] = None
+    stock: Optional[int] = Field(default=None, ge=0)
+    min_stock_level: Optional[int] = Field(default=None, ge=0)
+    is_new: Optional[bool] = None
+    is_bestseller: Optional[bool] = None
+    is_featured: Optional[bool] = None
+    is_campaign: Optional[bool] = None
 
 
 class ProductResponse(BaseModel):
     id: int
     category_id: int
-    brand_id: int | None
+    brand_id: Optional[int]
     sku: str
-    barcode: str | None
+    barcode: Optional[str]
     name: str
     slug: str
     short_description: str
     long_description: str
-    seo_title: str | None
-    seo_description: str | None
+    seo_title: Optional[str]
+    seo_description: Optional[str]
     price: float
-    discount_price: float | None
+    discount_price: Optional[float]
     vat_rate: float
     status: ProductStatus
     has_variants: bool
-    stock: int | None
-    min_stock_level: int | None
+    stock: Optional[int]
+    min_stock_level: Optional[int]
     is_new: bool
     is_bestseller: bool
     is_featured: bool

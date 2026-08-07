@@ -1,3 +1,4 @@
+from typing import Optional, Union, Any
 from datetime import datetime
 
 from pydantic import BaseModel, Field
@@ -14,6 +15,6 @@ class FavoriteResponse(BaseModel):
     product_slug: str
     sku: str
     price: float
-    discount_price: float | None
-    stock: int | None
+    discount_price: Optional[float]
+    stock: Optional[int]
     created_at: datetime

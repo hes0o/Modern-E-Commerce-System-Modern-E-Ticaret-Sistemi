@@ -1,4 +1,5 @@
-from datetime import UTC, datetime, timedelta
+from typing import Optional, Union, Any
+from datetime import timezone, datetime, timedelta
 from typing import Any
 
 import jwt
@@ -24,10 +25,10 @@ def verify_password(
 
 
 def create_access_token(
-    subject: str | int,
-    additional_claims: dict[str, Any] | None = None,
+    subject: Union[str, int],
+    additional_claims: dict[str, Optional[Any]] = None,
 ) -> str:
-    now = datetime.now(UTC)
+    now = datetime.now(timezone.utc)
     expires_at = now + timedelta(
         minutes=settings.access_token_expire_minutes
     )

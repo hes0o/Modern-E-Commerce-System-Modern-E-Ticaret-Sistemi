@@ -1,3 +1,4 @@
+from typing import Optional, Union, Any
 from sqlalchemy import func
 from sqlmodel import Session, select
 
@@ -7,7 +8,7 @@ from app.models.user import User
 def get_user_by_email(
     session: Session,
     email: str,
-) -> User | None:
+) -> Optional[User]:
     statement = select(User).where(
         func.lower(User.email) == email.lower()
     )
@@ -18,7 +19,7 @@ def get_user_by_email(
 def get_user_by_id(
     session: Session,
     user_id: int,
-) -> User | None:
+) -> Optional[User]:
     return session.get(User, user_id)
 
 

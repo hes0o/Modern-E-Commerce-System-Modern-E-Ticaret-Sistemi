@@ -1,3 +1,4 @@
+from typing import Optional, Union, Any
 from sqlmodel import Session, col, select
 
 from app.models.product import ProductVariant
@@ -22,7 +23,7 @@ def get_variant_by_id_and_product_id(
     *,
     variant_id: int,
     product_id: int,
-) -> ProductVariant | None:
+) -> Optional[ProductVariant]:
     statement = select(ProductVariant).where(
         col(ProductVariant.id) == variant_id,
         col(ProductVariant.product_id) == product_id,
@@ -33,7 +34,7 @@ def get_variant_by_id_and_product_id(
 def get_variant_by_sku(
     session: Session,
     sku: str,
-) -> ProductVariant | None:
+) -> Optional[ProductVariant]:
     statement = select(ProductVariant).where(
         col(ProductVariant.sku) == sku,
     )

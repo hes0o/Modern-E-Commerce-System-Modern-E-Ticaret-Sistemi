@@ -1,3 +1,4 @@
+from typing import Optional, Union, Any
 """
 Audit middleware — decorators for automatic audit logging.
 
@@ -23,7 +24,7 @@ from app.services.audit_service import audit_change, log_action
 def audited(
     action: str,
     entity_type: Optional[str] = None,
-    tracked_fields: List[str] | None = None,
+    tracked_fields: Optional[List[str]] = None,
 ) -> Callable:
     """
     Decorator for automatically audit-logging changes made by a function.
@@ -45,7 +46,7 @@ def audited(
         @functools.wraps(func)
         def wrapper(*args: Any, **kwargs: Any) -> Any:
             # Extract session and entity from kwargs if available
-            session: Session | None = kwargs.get("session")
+            session: Optional[Session] = kwargs.get("session")
             instance = kwargs.get("instance")
             user_id = kwargs.get("user_id")
             ip_address = kwargs.get("ip_address")
@@ -77,7 +78,7 @@ def log_admin_action(
     action: str,
     entity_type: str,
     entity_id: int,
-    details: Dict[str, Any] | None = None,
+    details: Dict[str, Optional[Any]] = None,
     ip_address: Optional[str] = None,
 ) -> None:
     """
