@@ -16,7 +16,7 @@ export const SIZES_SHOES = ['36', '37', '38', '39', '40', '41', '42', '43', '44'
 
 export const LOW_STOCK_THRESHOLD = 10
 
-export const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || 'http://localhost:8000/api/v1'
+export const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || 'http://localhost:8000'
 
 export const APP_NAME = 'MagazaPaneli'
 
