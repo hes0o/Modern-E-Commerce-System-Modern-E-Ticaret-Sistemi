@@ -1,8 +1,7 @@
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import ImageUploader from '@/components/common/ImageUploader'
 import VariantBuilder from './VariantBuilder'
-import { mockCategories } from '@/mock/categories'
-import { mockBrands } from '@/mock/brands'
+import api from '@/services/api'
 
 export default function ProductForm({
   initialValues,
@@ -11,19 +10,23 @@ export default function ProductForm({
   isEdit = false
 }) {
 
+  const [categories, setCategories] = useState([])
+  const [brands, setBrands] = useState([])
+
+  useEffect(() => {
+    api.get('/api/categories').then(res => setCategories(res.data.data || [])).catch(() => {})
+    api.get('/api/brands').then(res => setBrands(res.data.data || [])).catch(() => {})
+  }, [])
+
   const [formData, setFormData] = useState({
     name: initialValues?.name || '',
     sku: initialValues?.sku || '',
 
     category:
-      initialValues?.category ||
-      mockCategories[0]?.name ||
-      '',
+      initialValues?.category || '',
 
     brand:
-      initialValues?.brand ||
-      mockBrands[0]?.name ||
-      '',
+      initialValues?.brand || '',
 
     supplier:
       initialValues?.supplier ||

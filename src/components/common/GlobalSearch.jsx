@@ -1,19 +1,18 @@
 import { useState, useEffect, useRef, useCallback } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { Search, Package, ShoppingCart, Users, X, ArrowRight, Loader } from 'lucide-react'
-import { mockOrders } from '@/mock/orders'
-import { mockProducts } from '@/mock/products'
-import { mockUsers } from '@/mock/users'
+import api from '@/services/api'
 
 function highlight(text, query) {
-  if (!query) return text
-  const idx = text.toLowerCase().indexOf(query.toLowerCase())
-  if (idx === -1) return text
+  if (!query || !text) return text || ''
+  const str = String(text)
+  const idx = str.toLowerCase().indexOf(query.toLowerCase())
+  if (idx === -1) return str
   return (
     <>
-      {text.slice(0, idx)}
-      <mark className="bg-indigo-100 text-indigo-800 rounded px-0.5">{text.slice(idx, idx + query.length)}</mark>
-      {text.slice(idx + query.length)}
+      {str.slice(0, idx)}
+      <mark className="bg-indigo-100 text-indigo-800 rounded px-0.5">{str.slice(idx, idx + query.length)}</mark>
+      {str.slice(idx + query.length)}
     </>
   )
 }
@@ -52,30 +51,32 @@ export default function GlobalSearch({ open, onClose }) {
     return () => document.removeEventListener('keydown', handler)
   }, [open, onClose])
 
-  const doSearch = useCallback((q) => {
+  const doSearch = useCallback(async (q) => {
     if (!q.trim()) {
       setResults({ orders: [], products: [], users: [] })
       return
     }
     setLoading(true)
-    setTimeout(() => {
-      const lq = q.toLowerCase()
-      const orders = mockOrders
-        .filter(o => o.id.toLowerCase().includes(lq) || o.customer.toLowerCase().includes(lq))
-        .slice(0, 4)
-      const products = mockProducts
-        .filter(p => p.name.toLowerCase().includes(lq) || p.sku.toLowerCase().includes(lq))
-        .slice(0, 4)
-      const users = mockUsers
-        .filter(u => u.name.toLowerCase().includes(lq) || u.email.toLowerCase().includes(lq))
-        .slice(0, 3)
-      setResults({ orders, products, users })
+    try {
+      const [ordersRes, productsRes, usersRes] = await Promise.allSettled([
+        api.get('/api/orders/admin', { params: { page: 1, page_size: 4 } }),
+        api.get('/api/products', { params: { search: q, page: 1, page_size: 4 } }),
+        api.get('/api/admin/users', { params: { search: q, page: 1, page_size: 3 } }),
+      ])
+      setResults({
+        orders: ordersRes.status === 'fulfilled' ? (ordersRes.value.data.data?.items || []).slice(0, 4) : [],
+        products: productsRes.status === 'fulfilled' ? (productsRes.value.data.data?.items || []).slice(0, 4) : [],
+        users: usersRes.status === 'fulfilled' ? (usersRes.value.data.data?.items || []).slice(0, 3) : [],
+      })
+    } catch {
+      setResults({ orders: [], products: [], users: [] })
+    } finally {
       setLoading(false)
-    }, 150)
+    }
   }, [])
 
   useEffect(() => {
-    const t = setTimeout(() => doSearch(query), 200)
+    const t = setTimeout(() => doSearch(query), 300)
     return () => clearTimeout(t)
   }, [query, doSearch])
 
@@ -145,8 +146,8 @@ export default function GlobalSearch({ open, onClose }) {
                     <ShoppingCart size={14} className="text-indigo-600" />
                   </div>
                   <div className="flex-1 min-w-0">
-                    <p className="text-xs font-bold text-slate-800">{highlight(order.id, query)}</p>
-                    <p className="text-[11px] text-slate-500 truncate">{highlight(order.customer, query)}</p>
+                    <p className="text-xs font-bold text-slate-800">{highlight(order.order_number || `#${order.id}`, query)}</p>
+                    <p className="text-[11px] text-slate-500 truncate">{highlight(order.customer_name || order.status, query)}</p>
                   </div>
                   <ArrowRight size={14} className="text-slate-300" />
                 </button>
