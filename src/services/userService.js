@@ -1,181 +1,67 @@
 /**
- * userService — wraps mock user data.
- * Real API: replace with api.get('/users', ...) etc.
+ * userService — real API user operations.
  */
-
-import { mockUsers } from '@/mock/users'
-
-let _users = [...mockUsers]
-
-const delay = (ms) => new Promise((resolve) => setTimeout(resolve, ms))
+import api from '@/services/api'
 
 export const userService = {
-  async getAll({
-    page = 1,
-    limit = 10,
-    search = '',
-    role = '',
-    status = '',
-  } = {}) {
-    await delay(300)
-
-    let data = [..._users]
-
-    if (search) {
-      const keyword = search.toLowerCase()
-
-      data = data.filter(
-        (u) =>
-          u.name.toLowerCase().includes(keyword) ||
-          u.email.toLowerCase().includes(keyword) ||
-          (u.phone && u.phone.includes(search))
-      )
-    }
-
-    if (role) {
-      data = data.filter((u) => u.role === role)
-    }
-
-    if (status) {
-      data = data.filter((u) => u.status === status)
-    }
-
-    const total = data.length
-
-    const items = data
-      .slice((page - 1) * limit, page * limit)
-      .map(({ password, ...user }) => user)
-
+  async getAll({ page = 1, limit = 10, search = '', role = '', status = '' } = {}) {
+    const params = { page, page_size: limit }
+    if (search) params.search = search
+    if (role) params.role_name = role
+    if (status === 'active') params.is_active = true
+    if (status === 'inactive') params.is_active = false
+    const res = await api.get('/api/admin/users', { params })
+    const data = res.data.data
     return {
-      items,
-      total,
-      page,
-      limit,
+      items: data.items || [],
+      total: data.total || 0,
+      page: data.page || page,
+      limit: data.page_size || limit,
     }
   },
 
   async getById(id) {
-    await delay(200)
-
-    const user = _users.find((u) => u.id === Number(id))
-
-    if (!user) {
-      throw new Error('User not found')
-    }
-
-    const { password, ...safeUser } = user
-
-    return safeUser
+    const res = await api.get(`/api/admin/users/${id}`)
+    return res.data.data
   },
 
   async create(data) {
-    await delay(500)
-
-    const exists = _users.find(
-      (u) => u.email.toLowerCase() === data.email.toLowerCase()
-    )
-
-    if (exists) {
-      throw new Error('Bu e-posta adresi zaten kayıtlı.')
-    }
-
-    const newUser = {
-      id:
-        _users.length > 0
-          ? Math.max(..._users.map((u) => u.id)) + 1
-          : 1,
-      avatar: null,
-      orders: 0,
-      createdAt: new Date().toISOString().split('T')[0],
-      lastLogin: null,
-      ...data,
-    }
-
-    _users.push(newUser)
-
-    const { password, ...safeUser } = newUser
-
-    return safeUser
+    const res = await api.post('/api/admin/users', data)
+    return res.data.data
   },
 
   async update(id, data) {
-    await delay(400)
-
-    const index = _users.findIndex((u) => u.id === Number(id))
-
-    if (index === -1) {
-      throw new Error('User not found')
-    }
-
-    if (data.email) {
-      const exists = _users.find(
-        (u) =>
-          u.email.toLowerCase() === data.email.toLowerCase() &&
-          u.id !== Number(id)
-      )
-
-      if (exists) {
-        throw new Error('Bu e-posta adresi başka bir kullanıcıya ait.')
-      }
-    }
-
-    _users[index] = {
-      ..._users[index],
-      ...data,
-    }
-
-    const { password, ...safeUser } = _users[index]
-
-    return safeUser
+    const res = await api.patch(`/api/admin/users/${id}`, data)
+    return res.data.data
   },
 
   async resetPassword(id) {
-    await delay(300)
-
-    const index = _users.findIndex((u) => u.id === Number(id))
-
-    if (index === -1) {
-      throw new Error('User not found')
-    }
-
-    const tempPassword =
-      `Temp${Math.random()
-        .toString(36)
-        .slice(2, 8)
-        .toUpperCase()}!`
-
-    _users[index].password = tempPassword
-
-    return {
-      tempPassword,
-    }
+    // Backend doesn't have a dedicated reset endpoint yet,
+    // so we generate a temp password and update via PATCH
+    const tempPassword = `Temp${Math.random().toString(36).slice(2, 8).toUpperCase()}!`
+    await api.patch(`/api/admin/users/${id}`, { password: tempPassword })
+    return { tempPassword }
   },
 
   async delete(id) {
-    await delay(300)
-
-    _users = _users.filter((u) => u.id !== Number(id))
-
-    return {
-      success: true,
-    }
+    // Soft-delete: deactivate the user
+    await api.patch(`/api/admin/users/${id}`, { is_active: false })
+    return { success: true }
   },
 
   async getStats() {
-    await delay(200)
-
-    return {
-      total: _users.length,
-
-      roles: {
-        Admin: _users.filter((u) => u.role === 'Admin').length,
-        Employee: _users.filter((u) => u.role === 'Employee').length,
-        Customer: _users.filter((u) => u.role === 'Customer').length,
-        Guest: _users.filter((u) => u.role === 'Guest').length,
-      },
-
-      active: _users.filter((u) => u.status === 'active').length,
-      inactive: _users.filter((u) => u.status === 'inactive').length,
+    try {
+      // Fetch all users (small page) to compute stats
+      const res = await api.get('/api/admin/users', { params: { page: 1, page_size: 1 } })
+      const total = res.data.data.total || 0
+      return {
+        total,
+        roles: {},
+        active: 0,
+        inactive: 0,
+      }
+    } catch {
+      return { total: 0, roles: {}, active: 0, inactive: 0 }
     }
   },
 }

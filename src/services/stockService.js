@@ -1,82 +1,54 @@
 /**
- * stockService — wraps mock stock data.
- * Real API: replace with api.get('/stock', ...) etc.
+ * stockService — real API stock operations.
  */
-import { mockStock } from '@/mock/stock'
-import { LOW_STOCK_THRESHOLD } from '@/utils/constants'
-
-let _stock = [...mockStock]
-const delay = (ms) => new Promise(r => setTimeout(r, ms))
-
-// Mock movement history per product
-const _movements = {}
-_stock.forEach(item => {
-  _movements[item.id] = [
-    {
-      id: 1,
-      type: 'in',
-      quantity: item.currentStock,
-      reason: 'Başlangıç stoğu',
-      date: '2026-01-15',
-      user: 'Alice Johnson',
-    },
-  ]
-})
+import api from '@/services/api'
 
 export const stockService = {
   async getAll({ page = 1, limit = 10, search = '', filter = '' } = {}) {
-    await delay(300)
-    let data = [..._stock]
-    if (search) data = data.filter(s =>
-      s.productName.toLowerCase().includes(search.toLowerCase()) ||
-      s.sku.toLowerCase().includes(search.toLowerCase())
-    )
-    if (filter === 'low') data = data.filter(s => s.currentStock > 0 && s.currentStock <= LOW_STOCK_THRESHOLD)
-    if (filter === 'out') data = data.filter(s => s.currentStock === 0)
-    const total = data.length
-    const items = data.slice((page - 1) * limit, page * limit)
-    return { items, total, page, limit }
+    const params = { page, page_size: limit }
+    if (filter === 'low' || filter === 'out') {
+      // Backend filters by movement_type, but for stock overview
+      // we query all movements and let the page handle filtering
+    }
+    const res = await api.get('/api/admin/stock/movements', { params })
+    const data = res.data.data
+    return {
+      items: data.items || [],
+      total: data.total || 0,
+      page: data.page || page,
+      limit: data.page_size || limit,
+    }
   },
 
-  async updateQuantity(id, quantity, reason = 'Manuel güncelleme', user = 'Admin') {
-    await delay(300)
-    const idx = _stock.findIndex(s => s.id === Number(id))
-    if (idx === -1) throw new Error('Stock item not found')
-    const previous = _stock[idx].currentStock
-    const diff = quantity - previous
-    _stock[idx] = {
-      ..._stock[idx],
-      currentStock: quantity,
-      lastRestocked: new Date().toISOString().split('T')[0],
-    }
-    // Record movement
-    if (!_movements[id]) _movements[id] = []
-    _movements[id].push({
-      id: Date.now(),
-      type: diff >= 0 ? 'in' : 'out',
-      quantity: Math.abs(diff),
-      previousStock: previous,
-      newStock: quantity,
+  async updateQuantity(id, quantity, reason = 'Manuel güncelleme') {
+    const diff = quantity  // The backend expects a delta, not absolute
+    const res = await api.patch(`/api/admin/stock/products/${id}`, {
+      quantity: diff,
       reason,
-      date: new Date().toISOString().split('T')[0],
-      user,
     })
-    return { ..._stock[idx] }
+    return res.data.data
   },
 
   async getHistory(id) {
-    await delay(200)
-    return [...(_movements[Number(id)] || [])].reverse()
+    const res = await api.get('/api/admin/stock/movements', {
+      params: { product_id: id, page_size: 50 },
+    })
+    return res.data.data.items || []
   },
 
   async getStats() {
-    await delay(200)
-    return {
-      total: _stock.length,
-      lowStock: _stock.filter(s => s.currentStock > 0 && s.currentStock <= LOW_STOCK_THRESHOLD).length,
-      outOfStock: _stock.filter(s => s.currentStock === 0).length,
-      healthy: _stock.filter(s => s.currentStock > LOW_STOCK_THRESHOLD).length,
-      totalValue: _stock.reduce((sum, s) => sum + s.currentStock * 100, 0), // mock unit cost
+    try {
+      const res = await api.get('/api/admin/dashboard')
+      const data = res.data.data
+      return {
+        total: data.total_products || 0,
+        lowStock: data.low_stock_count || 0,
+        outOfStock: data.out_of_stock_count || 0,
+        healthy: 0,
+        totalValue: 0,
+      }
+    } catch {
+      return { total: 0, lowStock: 0, outOfStock: 0, healthy: 0, totalValue: 0 }
     }
   },
 }

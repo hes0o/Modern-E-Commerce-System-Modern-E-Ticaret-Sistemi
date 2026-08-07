@@ -1,54 +1,40 @@
 /**
- * productService — wraps mock product data.
- * Real API: replace with api.get('/products', ...) etc.
+ * productService — real API product operations.
  */
-import { mockProducts } from '@/mock/products'
-
-let _products = [...mockProducts]
-const delay = (ms) => new Promise(r => setTimeout(r, ms))
+import api from '@/services/api'
 
 export const productService = {
   async getAll({ page = 1, limit = 10, search = '', category = '', status = '' } = {}) {
-    await delay(300)
-    let data = [..._products]
-    if (search) data = data.filter(p => p.name.toLowerCase().includes(search.toLowerCase()) || p.sku.toLowerCase().includes(search.toLowerCase()))
-    if (category) data = data.filter(p => p.category === category)
-    if (status) data = data.filter(p => p.status === status)
-    const total = data.length
-    const items = data.slice((page - 1) * limit, page * limit)
-    return { items, total, page, limit }
+    const params = { page, page_size: limit }
+    if (search) params.search = search
+    if (category) params.category_id = category
+    const res = await api.get('/api/products', { params })
+    const data = res.data.data
+    return {
+      items: data.items || [],
+      total: data.total || 0,
+      page: data.page || page,
+      limit: data.page_size || limit,
+    }
   },
 
   async getById(id) {
-    await delay(200)
-    const product = _products.find(p => p.id === Number(id))
-    if (!product) throw new Error('Product not found')
-    return product
+    const res = await api.get(`/api/products/${id}`)
+    return res.data.data
   },
 
   async create(data) {
-    await delay(500)
-    const newProduct = {
-      ...data,
-      id: Math.max(..._products.map(p => p.id)) + 1,
-      createdAt: new Date().toISOString().split('T')[0],
-      updatedAt: new Date().toISOString().split('T')[0],
-    }
-    _products.unshift(newProduct)
-    return newProduct
+    const res = await api.post('/api/products', data)
+    return res.data.data
   },
 
   async update(id, data) {
-    await delay(400)
-    const idx = _products.findIndex(p => p.id === Number(id))
-    if (idx === -1) throw new Error('Product not found')
-    _products[idx] = { ..._products[idx], ...data, updatedAt: new Date().toISOString().split('T')[0] }
-    return _products[idx]
+    const res = await api.put(`/api/products/${id}`, data)
+    return res.data.data
   },
 
   async delete(id) {
-    await delay(300)
-    _products = _products.filter(p => p.id !== Number(id))
-    return { success: true }
+    const res = await api.delete(`/api/products/${id}`)
+    return res.data.data
   },
 }
