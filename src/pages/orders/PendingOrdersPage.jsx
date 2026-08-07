@@ -1,780 +1,170 @@
-import { useState } from "react";
-import Barcode from "react-barcode";
-import {
-    CircleCheckBig,
-    Clock,
-    User,
-    Package,
-    Eye,
-    X,
-    AlertTriangle
-} from "lucide-react";
+import { useState, useEffect, useCallback } from 'react'
+import { useNavigate, useLocation } from 'react-router-dom'
+import { orderService } from '@/services/orderService'
+import { formatCurrency, formatDate } from '@/utils/formatters'
+import Badge from '@/components/common/Badge'
+import { Clock, User, Package, Eye, CheckCircle2, XCircle, AlertTriangle, ArrowRight } from 'lucide-react'
+import toast from 'react-hot-toast'
 
-
-const initialOrders = [
-    {
-        id: "ORD-1001",
-        customer: "Ahmet Yılmaz",
-        phone: "0555 555 55 55",
-        email: "ahmet@gmail.com",
-
-        product: "Nike Air Max",
-        quantity: 2,
-
-        address:
-            "Mustafa Kemal Mah. 123. Sokak No:5 İstanbul",
-
-        invoiceAddress:
-            "Mustafa Kemal Mah. 123. Sokak No:5 İstanbul",
-
-        payment:
-            "Kredi Kartı",
-
-        total:
-            "3.499 TL",
-
-        createdAt: new Date(Date.now() - 1000 * 60 * 90),
-    },
-];
-
-
-function getWaitingTime(date) {
-
-    const diff =
-        Math.floor((Date.now() - date.getTime()) / 1000 / 60);
-
-
-    if (diff < 30) {
-        return {
-            text: `${diff} dakika`,
-            color: "bg-green-100 text-green-700",
-            icon: "green"
-        };
-    }
-
-
-    if (diff < 120) {
-        return {
-            text: `${diff} dakika`,
-            color: "bg-yellow-100 text-yellow-700",
-            icon: "yellow"
-        };
-    }
-
-
-    return {
-        text: `${diff} dakika`,
-        color: "bg-red-100 text-red-700",
-        icon: "red"
-    };
-
+function getWaitingInfo(dateStr) {
+  const diff = Math.floor((Date.now() - new Date(dateStr).getTime()) / 1000 / 60 / 60)
+  if (diff < 2) return { text: `${diff < 1 ? '<1' : diff} saat`, color: 'bg-emerald-100 text-emerald-700', urgent: false }
+  if (diff < 24) return { text: `${diff} saat`, color: 'bg-amber-100 text-amber-700', urgent: false }
+  return { text: `${Math.floor(diff / 24)} gün`, color: 'bg-red-100 text-red-700', urgent: true }
 }
 
-
 export default function PendingOrdersPage() {
-
-
-    const [orders, setOrders] = useState(initialOrders);
-    const [selectedOrder, setSelectedOrder] = useState(null);
-
-
-
-    const approveOrder = (id) => {
-
-        setOrders(prev =>
-            prev.filter(order => order.id !== id)
-        );
-
-        // Backend bağlanınca:
-        // status = preparing yapılacak
-    };
-
-
-
-    const cancelOrder = (id) => {
-
-        setOrders(prev =>
-            prev.filter(order => order.id !== id)
-        );
-
-        // Backend bağlanınca:
-        // status = cancelled yapılacak
-    };
-
-
-
-    return (
-
-        <div className="space-y-6">
-
-
-            {/* Header */}
-
-            <div>
-
-                <h1 className="text-2xl font-bold text-slate-800">
-                    Onay Bekleyen Siparişler
-                </h1>
-
-            </div>
-            {/* Liste */}
-
-
-            <div className="
-                    bg-white
-                    rounded-2xl
-                    w-full
-                    max-w-3xl
-                    shadow-xl
-                    overflow-hidden
-                ">
-                {orders.length === 0 && (
-
-                    <div className="py-20 text-center">
-
-
-                        <Package
-                            size={50}
-                            className="mx-auto text-slate-300"
-                        />
-
-
-                        <h3 className="mt-4 font-semibold text-slate-700">
-                            Bekleyen sipariş yok
-                        </h3>
-
-
-                        <p className="text-sm text-slate-500 mt-2">
-                            Yeni sipariş geldiğinde burada görünecek.
-                        </p>
-
-
-                    </div>
-
-                )}
-
-
-
-
-                <div className="divide-y divide-slate-100">
-
-
-                    {orders.map(order => {
-
-
-                        const waiting =
-                            getWaitingTime(order.createdAt);
-
-
-
-                        return (
-
-                            <div
-                                key={order.id}
-                                className="
-                                p-6
-                                hover:bg-slate-50
-                                transition
-                                "
-                            >
-
-
-                                <div className="flex justify-between gap-5">
-
-
-                                    {/* Sol bilgi */}
-
-                                    <div className="space-y-3">
-
-
-                                        <div className="flex items-center gap-3">
-
-
-                                            <div
-                                                className="
-                                                w-11
-                                                h-11
-                                                rounded-xl
-                                                bg-indigo-100
-                                                flex
-                                                items-center
-                                                justify-center
-                                                "
-                                            >
-
-                                                <Package
-                                                    size={22}
-                                                    className="text-indigo-600"
-                                                />
-
-                                            </div>
-
-
-
-                                            <div>
-
-                                                <h2 className="font-bold text-slate-800">
-                                                    {order.id}
-                                                </h2>
-
-                                                <p className="text-sm text-slate-500">
-                                                    {order.product}
-                                                </p>
-
-                                            </div>
-
-
-                                        </div>
-
-
-
-
-                                        <div className="flex gap-5 text-sm text-slate-600">
-
-
-                                            <span className="flex items-center gap-2">
-
-                                                <User size={15} />
-
-                                                {order.customer}
-
-                                            </span>
-
-
-
-                                            <span>
-
-                                                Adet:
-                                                {" "}
-                                                {order.quantity}
-
-                                            </span>
-
-
-                                        </div>
-
-
-
-                                    </div>
-
-
-
-
-
-
-                                    {/* Sağ taraf */}
-
-
-                                    <div className="flex flex-col items-end gap-4">
-
-
-                                        <div
-                                            className={`
-                                            px-3 py-2 
-                                            rounded-xl
-                                            flex
-                                            items-center
-                                            gap-2
-                                            text-sm
-                                            font-semibold
-                                            ${waiting.color}
-                                            `}
-                                        >
-
-                                            {waiting.icon === "red"
-                                                ?
-                                                <AlertTriangle size={16} />
-                                                :
-                                                <Clock size={16} />
-                                            }
-
-
-                                            {waiting.text}
-                                            {" "}
-                                            bekliyor
-
-                                        </div>
-
-
-
-
-                                        <div className="flex gap-2">
-
-
-                                            <button
-
-                                                onClick={() =>
-                                                    setSelectedOrder(order)
-                                                }
-
-                                                className="
-                                                flex
-                                                items-center
-                                                gap-2
-                                                px-4
-                                                py-2
-                                                rounded-xl
-                                                bg-slate-100
-                                                text-slate-700
-                                                text-sm
-                                                hover:bg-slate-200
-                                                "
-
-                                            >
-
-                                                <Eye size={16} />
-
-                                                Detay
-
-                                            </button>
-
-
-
-                                            <button
-
-                                                onClick={() =>
-                                                    approveOrder(order.id)
-                                                }
-
-                                                className="
-                                                flex
-                                                items-center
-                                                gap-2
-                                                px-4
-                                                py-2
-                                                rounded-xl
-                                                bg-green-600
-                                                text-white
-                                                text-sm
-                                                hover:bg-green-700
-                                                "
-
-                                            >
-
-                                                <CircleCheckBig size={16} />
-
-                                                Onayla
-
-                                            </button>
-
-
-
-                                            <button
-
-                                                onClick={() =>
-                                                    cancelOrder(order.id)
-                                                }
-
-                                                className="
-                                                px-4
-                                                py-2
-                                                rounded-xl
-                                                bg-red-100
-                                                text-red-600
-                                                text-sm
-                                                hover:bg-red-200
-                                                "
-
-                                            >
-
-                                                İptal
-
-                                            </button>
-
-
-                                        </div>
-
-
-                                    </div>
-
-
-                                </div>
-
-
-
-                            </div>
-
-
-                        );
-
-
-                    })}
-
-
-                </div>
-
-
-            </div>
-
-            {/* Sipariş Detay Modal */}
-
-            {selectedOrder && (
-
-                <div className="
-            fixed
-            inset-0
-            bg-black/40
-            backdrop-blur-sm
-            flex
-            items-center
-            justify-center
-            z-50
-            p-5
-        ">
-
-
-                    <div className="
-                            bg-white
-                            rounded-2xl
-                            w-full
-                            max-w-3xl
-                            max-h-[90vh]
-                            shadow-xl
-                            overflow-hidden
-                            flex
-                            flex-col
-                        ">
-
-
-                        {/* Modal Header */}
-
-                        <div className="
-                            px-6
-                            py-5
-                            border-b
-                            border-slate-200
-                            flex
-                            justify-between
-                            items-center
-                            flex-shrink-0
-                        ">
-
-                            <div>
-
-                                <h2 className="
-                            text-xl
-                            font-bold
-                            text-slate-800
-                        ">
-                                    Sipariş Detayı
-                                </h2>
-
-                                <p className="text-sm text-slate-500 mt-1">
-                                    {selectedOrder.id}
-                                </p>
-
-                            </div>
-
-
-                            <button
-                                onClick={() => setSelectedOrder(null)}
-                                className="
-                            p-2
-                            rounded-lg
-                            hover:bg-slate-100
-                        "
-                            >
-
-                                <X size={20} />
-
-                            </button>
-
-
-                        </div>
-
-
-
-                        {/* İçerik */}
-
-                        <div className="
-                            p-6
-                            grid
-                            grid-cols-1
-                            md:grid-cols-2
-                            gap-5
-                            overflow-y-auto
-                            flex-1
-                        ">
-
-
-                            <div className="
-                        border
-                        rounded-xl
-                        p-4
-                    ">
-
-                                <h3 className="font-semibold text-slate-700 mb-3">
-                                    Müşteri Bilgileri
-                                </h3>
-
-                                <p>
-                                    <b>Ad:</b> {selectedOrder.customer}
-                                </p>
-
-                                <p>
-                                    <b>Telefon:</b> {selectedOrder.phone}
-                                </p>
-
-                                <p>
-                                    <b>Email:</b> {selectedOrder.email}
-                                </p>
-
-
-                            </div>
-
-
-
-                            <div className="
-                        border
-                        rounded-xl
-                        p-4
-                    ">
-
-                                <h3 className="font-semibold text-slate-700 mb-3">
-                                    Ürün Bilgileri
-                                </h3>
-
-                                <p>
-                                    <b>Ürün:</b> {selectedOrder.product}
-                                </p>
-
-                                <p>
-                                    <b>Adet:</b> {selectedOrder.quantity}
-                                </p>
-
-
-                                <p>
-                                    <b>Tutar:</b> {selectedOrder.total}
-                                </p>
-
-
-                            </div>
-
-
-
-
-                            <div className="
-                        border
-                        rounded-xl
-                        p-4
-                        md:col-span-2
-                    ">
-
-                                <h3 className="font-semibold text-slate-700 mb-3">
-                                    Teslimat Adresi
-                                </h3>
-
-                                <p>
-                                    {selectedOrder.address}
-                                </p>
-
-
-                            </div>
-
-
-
-                            <div className="
-                        border
-                        rounded-xl
-                        p-4
-                        md:col-span-2
-                    ">
-
-                                <h3 className="font-semibold text-slate-700 mb-3">
-                                    Fatura Bilgileri
-                                </h3>
-
-                                <p>
-                                    {selectedOrder.invoiceAddress}
-                                </p>
-
-                                <p className="mt-2">
-                                    <b>Ödeme:</b> {selectedOrder.payment}
-                                </p>
-
-
-                            </div>
-
-
-
-                        </div>
-                        <div
-                            className="
-                                border
-                                rounded-xl
-                                p-5
-                                md:col-span-2
-                                bg-slate-50
-                                mt-4
-                            "
-                        >
-
-
-                            <h3 className="
-                        font-semibold
-                        text-slate-700
-                        mb-4
-                        ">
-
-                                Kargo Etiketi Önizleme
-
-                            </h3>
-
-
-
-                            <div
-                                id="cargo-label"
-                                className="
-                                bg-white
-                                border
-                                rounded-xl
-                                p-4
-                                w-full
-                                max-w-sm
-                            "
-                            >
-
-
-                                <div className="text-center mb-4">
-
-                                    <Barcode
-                                        value={selectedOrder.id}
-                                        width={1.5}
-                                        height={50}
-                                    />
-
-                                </div>
-
-
-
-                                <div className="space-y-2 text-sm">
-
-
-                                    <p>
-                                        <b>Sipariş No:</b>
-                                        {selectedOrder.id}
-                                    </p>
-
-
-                                    <p>
-                                        <b>Alıcı:</b>
-                                        {selectedOrder.customer}
-                                    </p>
-
-
-                                    <p>
-                                        <b>Telefon:</b>
-                                        {selectedOrder.phone}
-                                    </p>
-
-
-
-                                    <p>
-                                        <b>Adres:</b>
-                                        <br />
-
-                                        {selectedOrder.address}
-
-                                    </p>
-
-
-
-                                    <p>
-                                        <b>Ürün:</b>
-                                        {selectedOrder.product}
-                                    </p>
-
-
-
-                                    <p>
-                                        <b>Adet:</b>
-                                        {selectedOrder.quantity}
-                                    </p>
-
-
-
-                                    <p>
-                                        <b>Ödeme:</b>
-                                        {selectedOrder.payment}
-                                    </p>
-
-
-                                    <p>
-                                        <b>Tutar:</b>
-                                        {selectedOrder.total}
-                                    </p>
-
-
-
-                                </div>
-
-
-                            </div>
-
-
-                        </div>
-                        <button
-
-                            onClick={() => window.print()}
-
-                            className="
-                            px-5
-                            py-2
-                            rounded-xl
-                            bg-indigo-600
-                            text-white
-                            hover:bg-indigo-700
-                            "
-
-                        >
-
-                            🖨 Kargo Etiketi Yazdır
-
-                        </button>
-
-
-
-                        <div className="
-                            px-6
-                            py-4
-                            border-t
-                            flex
-                            justify-end
-                            flex-shrink-0
-                        ">
-
-                            <button
-
-                                onClick={() => setSelectedOrder(null)}
-
-                                className="
-                            px-5
-                            py-2
-                            rounded-xl
-                            bg-slate-800
-                            text-white
-                            hover:bg-slate-900
-                        "
-
-                            >
-
-                                Kapat
-
-                            </button>
-
-
-                        </div>
-
-
-
-                    </div>
-
-
-                </div>
-
-            )}
+  const [orders, setOrders] = useState([])
+  const [loading, setLoading] = useState(true)
+  const [updating, setUpdating] = useState(null) // orderId being updated
+  const navigate = useNavigate()
+  const location = useLocation()
+
+  const load = useCallback(async () => {
+    setLoading(true)
+    try {
+      const res = await orderService.getAll({ status: 'pending', limit: 100 })
+      setOrders(res.items)
+    } catch {
+      toast.error('Siparişler yüklenemedi.')
+    } finally {
+      setLoading(false)
+    }
+  }, [])
+
+  useEffect(() => { load() }, [load])
+
+  useEffect(() => {
+    document.title = orders.length > 0 ? `(${orders.length}) Admin Panel` : 'Admin Panel'
+    return () => { document.title = 'Admin Panel' }
+  }, [orders.length])
+
+  const handleApprove = async (id) => {
+    setUpdating(id)
+    try {
+      await orderService.updateStatus(id, 'processing')
+      toast.success('Sipariş onaylandı ve hazırlık aşamasına alındı.')
+      await load()
+    } catch {
+      toast.error('İşlem başarısız.')
+    } finally {
+      setUpdating(null)
+    }
+  }
+
+  const handleCancel = async (id) => {
+    setUpdating(id)
+    try {
+      await orderService.updateStatus(id, 'cancelled')
+      toast.success('Sipariş iptal edildi.')
+      await load()
+    } catch {
+      toast.error('İşlem başarısız.')
+    } finally {
+      setUpdating(null)
+    }
+  }
+
+  return (
+    <div className="space-y-6">
+      <div className="page-header">
+        <div>
+          <h1 className="page-title">Onay Bekleyen Siparişler</h1>
+          <p className="page-subtitle">Yeni gelen ve onay bekleyen tüm siparişler</p>
         </div>
+        {!loading && (
+          <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-amber-100 text-amber-700 text-xs font-bold">
+            <Clock size={13} />
+            {orders.length} sipariş bekliyor
+          </span>
+        )}
+      </div>
 
-    );
+      <div className="card overflow-hidden">
+        {loading ? (
+          <div className="divide-y divide-slate-100">
+            {Array.from({ length: 3 }).map((_, i) => (
+              <div key={i} className="p-6 flex gap-4">
+                <div className="w-11 h-11 skeleton rounded-xl flex-shrink-0" />
+                <div className="flex-1 space-y-2">
+                  <div className="h-4 skeleton w-32" />
+                  <div className="h-3 skeleton w-48" />
+                </div>
+              </div>
+            ))}
+          </div>
+        ) : orders.length === 0 ? (
+          <div className="py-20 text-center">
+            <Package size={48} className="mx-auto text-slate-300" />
+            <h3 className="mt-4 font-semibold text-slate-700">Bekleyen sipariş yok</h3>
+            <p className="text-sm text-slate-500 mt-2">Yeni sipariş geldiğinde burada görünecek.</p>
+          </div>
+        ) : (
+          <div className="divide-y divide-slate-100">
+            {orders.map((order) => {
+              const waiting = getWaitingInfo(order.orderedAt)
+              const isUpdating = updating === order.id
+              return (
+                <div key={order.id} className="p-5 hover:bg-slate-50/70 transition-colors">
+                  <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+                    {/* Left */}
+                    <div className="flex items-start gap-3">
+                      <div className="w-11 h-11 rounded-xl bg-indigo-100 flex items-center justify-center flex-shrink-0">
+                        <Package size={20} className="text-indigo-600" />
+                      </div>
+                      <div className="space-y-1.5">
+                        <div className="flex items-center gap-2 flex-wrap">
+                          <h2 className="font-bold text-slate-800 text-sm">{order.id}</h2>
+                          {waiting.urgent && <AlertTriangle size={14} className="text-red-500" />}
+                        </div>
+                        <div className="flex items-center gap-3 text-xs text-slate-500 flex-wrap">
+                          <span className="flex items-center gap-1"><User size={12} />{order.customer}</span>
+                          <span>{order.items?.length || 0} kalem</span>
+                          <span className="font-semibold text-slate-700">{formatCurrency(order.total)}</span>
+                        </div>
+                        <p className="text-xs text-slate-400">{formatDate(order.orderedAt)}</p>
+                      </div>
+                    </div>
 
+                    {/* Right */}
+                    <div className="flex flex-col sm:flex-row items-start sm:items-center gap-3">
+                      <span className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg text-xs font-semibold ${waiting.color}`}>
+                        <Clock size={12} />
+                        {waiting.text} bekliyor
+                      </span>
+                      <div className="flex items-center gap-2">
+                        <button
+                          onClick={() => navigate(`/orders/${order.id}`, {
+                          state: {from: location.pathname,},})}
+                          className="btn btn-secondary btn-sm flex items-center gap-1.5"
+                        >
+                          <Eye size={13} /> Detay
+                        </button>
+                        <button
+                          onClick={() => handleApprove(order.id)}
+                          disabled={isUpdating}
+                          className="btn btn-sm bg-emerald-600 text-white hover:bg-emerald-700 border border-emerald-600 flex items-center gap-1.5 disabled:opacity-60"
+                        >
+                          <CheckCircle2 size={13} />
+                          {isUpdating ? '...' : 'Onayla'}
+                        </button>
+                        <button
+                          onClick={() => handleCancel(order.id)}
+                          disabled={isUpdating}
+                          className="btn btn-sm bg-red-50 text-red-600 hover:bg-red-100 border border-red-200 flex items-center gap-1.5 disabled:opacity-60"
+                        >
+                          <XCircle size={13} />
+                          İptal
+                        </button>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              )
+            })}
+          </div>
+        )}
+      </div>
+    </div>
+  )
 }
