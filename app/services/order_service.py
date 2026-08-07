@@ -20,30 +20,25 @@ Transaction flow:
     COMMIT
 """
 
-from typing import Optional, List, Tuple
-
 import secrets
-from datetime import datetime, timezone
+from datetime import UTC, datetime
 
 from sqlmodel import Session, select
 
-from app.models.cart import Cart, CartItem
-from app.models.enums import OrderStatus, PaymentMethod, StockMovementType
+from app.models.cart import CartItem
+from app.models.enums import OrderStatus, PaymentMethod
 from app.models.order import Order, OrderItem, OrderStatusHistory
 from app.models.product import Product, ProductVariant
+from app.services.notification_service import queue_notification
 from app.services.stock_service import InsufficientStockError, check_low_stock, reserve_stock
 
 
 class OrderCreationError(Exception):
     """Base exception for order creation failures."""
 
-    pass
-
 
 class EmptyCartError(OrderCreationError):
     """Raised when attempting to create an order from an empty cart."""
-
-    pass
 
 
 class StockConflictError(OrderCreationError):
@@ -53,7 +48,7 @@ class StockConflictError(OrderCreationError):
     Includes details about which items failed (for the 409 response).
     """
 
-    def __init__(self, conflicts: List[dict]) -> None:
+    def __init__(self, conflicts: list[dict]) -> None:
         self.conflicts = conflicts
         super().__init__(f"Stock conflicts for {len(conflicts)} item(s)")
 
@@ -65,15 +60,15 @@ def _generate_order_number() -> str:
     Format: SP-YYYYMMDD-XXXXX (e.g., SP-20260802-A3F7K)
     The random suffix makes order numbers non-sequential and non-guessable.
     """
-    date_part = datetime.now(timezone.utc).strftime("%Y%m%d")
+    date_part = datetime.now(UTC).strftime("%Y%m%d")
     random_part = secrets.token_hex(3).upper()[:5]
     return f"SP-{date_part}-{random_part}"
 
 
 def _get_effective_price(
     product: Product,
-    variant: Optional[ProductVariant],
-) -> Tuple[float, Optional[float]]:
+    variant: ProductVariant | None,
+) -> tuple[float, float | None]:
     """
     Determine the effective price and discount price for an item.
     """
@@ -86,9 +81,7 @@ def _get_effective_price(
 
     return (
         float(price),
-        float(discount_price)
-        if discount_price is not None
-        else None,
+        float(discount_price) if discount_price is not None else None,
     )
 
 
@@ -96,14 +89,14 @@ def create_order(
     session: Session,
     *,
     cart_id: int,
-    user_id: Optional[int] = None,
-    guest_name: Optional[str] = None,
-    guest_email: Optional[str] = None,
-    guest_phone: Optional[str] = None,
+    user_id: int | None = None,
+    guest_name: str | None = None,
+    guest_email: str | None = None,
+    guest_phone: str | None = None,
     shipping_address_snapshot: dict,
-    billing_address_snapshot: Optional[dict] = None,
+    billing_address_snapshot: dict | None = None,
     payment_method: PaymentMethod,
-    customer_note: Optional[str] = None,
+    customer_note: str | None = None,
     contract_version_accepted: str,
 ) -> Order:
     """
@@ -132,17 +125,15 @@ def create_order(
         StockConflictError: If any item has insufficient stock.
     """
     # 1. Load cart items
-    cart_items = session.exec(
-        select(CartItem).where(CartItem.cart_id == cart_id)
-    ).all()
+    cart_items = session.exec(select(CartItem).where(CartItem.cart_id == cart_id)).all()
 
     if not cart_items:
         raise EmptyCartError("Cannot create order from an empty cart.")
 
     # 2. Process each item: lock stock, validate, deduct
-    order_items_data: List[dict] = []
-    stock_conflicts: List[dict] = []
-    low_stock_warnings: List[Tuple[int, Optional[int]]] = []  # (product_id, variant_id)
+    order_items_data: list[dict] = []
+    stock_conflicts: list[dict] = []
+    low_stock_warnings: list[tuple[int, int | None]] = []  # (product_id, variant_id)
     reserved_movements = []
     subtotal = 0.0
     discount_total = 0.0
@@ -153,17 +144,13 @@ def create_order(
 
     for cart_item in cart_items:
         # Load product (always needed for name/price/vat)
-        product = session.exec(
-            select(Product).where(Product.id == cart_item.product_id)
-        ).one()
+        product = session.exec(select(Product).where(Product.id == cart_item.product_id)).one()
 
         # Load variant if applicable
         variant = None
         if cart_item.variant_id:
             variant = session.exec(
-                select(ProductVariant).where(
-                    ProductVariant.id == cart_item.variant_id
-                )
+                select(ProductVariant).where(ProductVariant.id == cart_item.variant_id)
             ).one()
 
         # Determine effective pricing
@@ -173,9 +160,7 @@ def create_order(
 
         # Calculate line-level financials
         line_discount = (
-            (unit_price - unit_discount_price) * cart_item.quantity
-            if unit_discount_price
-            else 0.0
+            (unit_price - unit_discount_price) * cart_item.quantity if unit_discount_price else 0.0
         )
         vat_rate = float(product.vat_rate)
         line_vat = line_total * vat_rate / (100 + vat_rate)
@@ -263,10 +248,42 @@ def create_order(
     )
     session.add(history_entry)
 
-        # 8. Link this order's stock movements to the real order ID
+    # 8. Link this order's stock movements to the real order ID
     for movement in reserved_movements:
         movement.related_order_id = order.id
         session.add(movement)
+
+    # Create an admin notification for the new order
+    queue_notification(
+        session,
+        notification_type="new_order",
+        title="Yeni Sipariş",
+        message=f"{order.order_number} numaralı sipariş oluşturuldu.",
+        related_entity_type="order",
+        related_entity_id=order.id,
+    )
+
+    # Create automatic low/out-of-stock notifications
+    for product_id, variant_id in set(low_stock_warnings):
+        product = session.get(Product, product_id)
+        variant = session.get(ProductVariant, variant_id) if variant_id is not None else None
+
+        if product is None:
+            continue
+
+        remaining_stock = variant.stock if variant is not None else product.stock
+
+        notification_type = "out_of_stock" if remaining_stock == 0 else "low_stock"
+        title = "Stok Tükendi" if remaining_stock == 0 else "Kritik Stok Uyarısı"
+
+        queue_notification(
+            session,
+            notification_type=notification_type,
+            title=title,
+            message=(f"{product.name} ürününün stoğu {remaining_stock} adede düştü."),
+            related_entity_type="product",
+            related_entity_id=product.id,
+        )
 
     # 9. Clear the cart
     for cart_item in cart_items:
@@ -279,8 +296,8 @@ def cancel_order(
     session: Session,
     *,
     order: Order,
-    cancelled_by_user_id: Optional[int] = None,
-    note: Optional[str] = None,
+    cancelled_by_user_id: int | None = None,
+    note: str | None = None,
 ) -> Order:
     """
     Cancel an order and release all reserved stock.
@@ -330,6 +347,17 @@ def cancel_order(
     )
     session.add(history_entry)
 
+    if order.user_id is not None:
+        queue_notification(
+            session,
+            notification_type="order_status_changed",
+            title="Sipariş Durumu Güncellendi",
+            message=(f"{order.order_number} numaralı siparişiniz iptal edildi."),
+            related_entity_type="order",
+            related_entity_id=order.id,
+            recipient_user_id=order.user_id,
+        )
+
     return order
 
 
@@ -339,7 +367,7 @@ def update_order_status(
     order: Order,
     new_status: OrderStatus,
     changed_by_user_id: int,
-    note: Optional[str] = None,
+    note: str | None = None,
 ) -> Order:
     """
     Update order status with state machine validation.
@@ -380,5 +408,19 @@ def update_order_status(
         note=note,
     )
     session.add(history_entry)
+
+    if order.user_id is not None:
+        queue_notification(
+            session,
+            notification_type="order_status_changed",
+            title="Sipariş Durumu Güncellendi",
+            message=(
+                f"{order.order_number} numaralı siparişinizin "
+                f"durumu '{new_status.value}' olarak güncellendi."
+            ),
+            related_entity_type="order",
+            related_entity_id=order.id,
+            recipient_user_id=order.user_id,
+        )
 
     return order

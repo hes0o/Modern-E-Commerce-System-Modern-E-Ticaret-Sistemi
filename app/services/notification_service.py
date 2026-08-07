@@ -19,6 +19,29 @@ from app.schemas.notification import (
 )
 
 
+def queue_notification(
+    session: Session,
+    *,
+    notification_type: str,
+    title: str,
+    message: str,
+    related_entity_type: str | None = None,
+    related_entity_id: int | None = None,
+    recipient_user_id: int | None = None,
+) -> Notification:
+    """Bildirimi mevcut transaction içine ekler; commit işlemini çağıran yapar."""
+    notification = Notification(
+        type=notification_type,
+        title=title,
+        message=message,
+        related_entity_type=related_entity_type,
+        related_entity_id=related_entity_id,
+        is_read=False,
+        recipient_user_id=recipient_user_id,
+    )
+    session.add(notification)
+    return notification
+
 def list_notifications(
     session: Session,
     *,

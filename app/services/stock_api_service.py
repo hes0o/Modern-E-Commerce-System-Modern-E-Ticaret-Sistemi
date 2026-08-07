@@ -7,6 +7,7 @@ from app.core.exceptions import (
     NotFoundError,
 )
 from app.models.enums import StockMovementType
+from app.models.product import Product, ProductVariant
 from app.repositories.stock_repository import (
     get_stock_movements,
 )
@@ -15,6 +16,7 @@ from app.schemas.stock import (
     StockMovementResponse,
     StockUpdateRequest,
 )
+from app.services.notification_service import queue_notification
 from app.services.stock_service import (
     InsufficientStockError,
     manual_stock_in,
@@ -70,7 +72,43 @@ def update_stock(
                 user_id=user_id,
                 note=payload.note,
             )
+        product = session.get(Product, product_id)
+        variant = (
+            session.get(ProductVariant, movement.variant_id)
+            if movement.variant_id is not None
+            else None
+        )
 
+        if product is not None:
+            minimum_stock = (
+                variant.min_stock_level
+                if variant is not None
+                else product.min_stock_level
+            ) or 0
+
+            if movement.stock_after <= minimum_stock:
+                notification_type = (
+                    "out_of_stock"
+                    if movement.stock_after == 0
+                    else "low_stock"
+                )
+                title = (
+                    "Stok Tükendi"
+                    if movement.stock_after == 0
+                    else "Kritik Stok Uyarısı"
+                )
+
+                queue_notification(
+                    session,
+                    notification_type=notification_type,
+                    title=title,
+                    message=(
+                        f"{product.name} ürününün stoğu "
+                        f"{movement.stock_after} adede düştü."
+                    ),
+                    related_entity_type="product",
+                    related_entity_id=product.id,
+                )
         session.commit()
         session.refresh(movement)
 

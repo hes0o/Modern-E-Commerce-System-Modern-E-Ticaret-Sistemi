@@ -26,6 +26,7 @@ from app.schemas.auth import (
     UserProfileUpdate,
     UserRegister,
 )
+from app.services.notification_service import queue_notification
 
 
 def register_user(
@@ -77,6 +78,16 @@ def register_user(
         created_user = create_user(
             session,
             user,
+        )
+        queue_notification(
+            session,
+            notification_type="new_member",
+            title="Yeni Kullanıcı",
+            message=(
+                f"{created_user.name} sisteme kayıt oldu."
+            ),
+            related_entity_type="user",
+            related_entity_id=created_user.id,
         )
         session.commit()
         session.refresh(created_user)
