@@ -1,5 +1,5 @@
 import { createContext, useState, useEffect, useCallback } from 'react'
-import { mockUsers } from '@/mock/users'
+import { authService } from '@/services/authService'
 
 export const AuthContext = createContext(null)
 
@@ -30,19 +30,12 @@ export function AuthProvider({ children }) {
     setLoading(true)
     setError(null)
     try {
-      // Simulate network delay
-      await new Promise(r => setTimeout(r, 800))
-      const found = mockUsers.find(
-        u => u.email === email && u.password === password
-      )
-      if (!found) {
-        throw new Error('Invalid email or password')
-      }
-      const { password: _pw, ...safeUser } = found
-      setUser(safeUser)
-      return safeUser
+      const fullUser = await authService.login(email, password)
+      setUser(fullUser)
+      return fullUser
     } catch (err) {
-      setError(err.message)
+      const msg = err.response?.data?.message || err.message || 'Giriş başarısız.'
+      setError(msg)
       throw err
     } finally {
       setLoading(false)
@@ -50,6 +43,7 @@ export function AuthProvider({ children }) {
   }, [])
 
   const logout = useCallback(() => {
+    authService.logout()
     setUser(null)
   }, [])
 
