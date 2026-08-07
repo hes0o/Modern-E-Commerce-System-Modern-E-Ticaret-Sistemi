@@ -1,20 +1,37 @@
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import DataTable from '@/components/common/DataTable'
 import Modal from '@/components/common/Modal'
 import ConfirmDialog from '@/components/common/ConfirmDialog'
-import { mockBrands } from '@/mock/brands'
+import api from '@/services/api'
 import { slugify } from '@/utils/formatters'
 import { Plus, Edit2, Trash2, Globe } from 'lucide-react'
 
 export default function BrandsPage() {
-  const [brands, setBrands] = useState(mockBrands)
+  const [brands, setBrands] = useState([])
   const [search, setSearch] = useState('')
   const [isModalOpen, setIsModalOpen] = useState(false)
   const [editingItem, setEditingItem] = useState(null)
   const [deleteId, setDeleteId] = useState(null)
+  const [loading, setLoading] = useState(true)
 
   const [name, setName] = useState('')
   const [website, setWebsite] = useState('')
+
+  const fetchBrands = async () => {
+    try {
+      setLoading(true)
+      const res = await api.get('/api/brands/admin')
+      setBrands(res.data.data || [])
+    } catch (err) {
+      console.error('Failed to load brands:', err)
+    } finally {
+      setLoading(false)
+    }
+  }
+
+  useEffect(() => {
+    fetchBrands()
+  }, [])
 
   const handleOpenCreate = () => {
     setEditingItem(null)
@@ -30,39 +47,43 @@ export default function BrandsPage() {
     setIsModalOpen(true)
   }
 
-  const handleSave = (e) => {
+  const handleSave = async (e) => {
     e.preventDefault()
-    if (editingItem) {
-      setBrands((prev) =>
-        prev.map((b) =>
-          b.id === editingItem.id
-            ? { ...b, name, slug: slugify(name), website }
-            : b
-        )
-      )
-    } else {
-      const newBrand = {
-        id: Date.now(),
-        name,
-        slug: slugify(name),
-        website,
-        productCount: 0,
-        createdAt: new Date().toISOString().split('T')[0],
+    try {
+      if (editingItem) {
+        await api.patch(`/api/brands/${editingItem.id}`, {
+          name,
+          slug: slugify(name),
+          website,
+        })
+      } else {
+        await api.post('/api/brands', {
+          name,
+          slug: slugify(name),
+          website,
+        })
       }
-      setBrands((prev) => [newBrand, ...prev])
+      setIsModalOpen(false)
+      fetchBrands()
+    } catch (err) {
+      console.error('Save failed:', err)
     }
-    setIsModalOpen(false)
   }
 
-  const handleDelete = () => {
-    setBrands((prev) => prev.filter((b) => b.id !== deleteId))
-    setDeleteId(null)
+  const handleDelete = async () => {
+    try {
+      await api.delete(`/api/brands/${deleteId}`)
+      setDeleteId(null)
+      fetchBrands()
+    } catch (err) {
+      console.error('Delete failed:', err)
+    }
   }
 
   const filtered = brands.filter(
     (b) =>
-      b.name.toLowerCase().includes(search.toLowerCase()) ||
-      b.slug.toLowerCase().includes(search.toLowerCase())
+      (b.name || '').toLowerCase().includes(search.toLowerCase()) ||
+      (b.slug || '').toLowerCase().includes(search.toLowerCase())
   )
 
   const columns = [
@@ -77,7 +98,7 @@ export default function BrandsPage() {
         </a>
       ) : '-',
     },
-    { header: 'Ürün Sayısı', accessor: 'productCount', render: (row) => `${row.productCount} ürün` },
+    { header: 'Ürün Sayısı', accessor: 'product_count', render: (row) => `${row.product_count || 0} ürün` },
     {
       header: 'İşlemler',
       render: (row) => (
@@ -112,6 +133,7 @@ export default function BrandsPage() {
         searchValue={search}
         onSearchChange={setSearch}
         searchPlaceholder="Marka ara..."
+        loading={loading}
       />
 
       <Modal

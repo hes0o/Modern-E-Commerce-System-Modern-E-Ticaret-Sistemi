@@ -1,20 +1,37 @@
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import DataTable from '@/components/common/DataTable'
 import Modal from '@/components/common/Modal'
 import ConfirmDialog from '@/components/common/ConfirmDialog'
-import { mockCategories } from '@/mock/categories'
+import api from '@/services/api'
 import { slugify } from '@/utils/formatters'
 import { Plus, Edit2, Trash2 } from 'lucide-react'
 
 export default function CategoriesPage() {
-  const [categories, setCategories] = useState(mockCategories)
+  const [categories, setCategories] = useState([])
   const [search, setSearch] = useState('')
   const [isModalOpen, setIsModalOpen] = useState(false)
   const [editingItem, setEditingItem] = useState(null)
   const [deleteId, setDeleteId] = useState(null)
+  const [loading, setLoading] = useState(true)
 
   const [name, setName] = useState('')
   const [description, setDescription] = useState('')
+
+  const fetchCategories = async () => {
+    try {
+      setLoading(true)
+      const res = await api.get('/api/categories')
+      setCategories(res.data.data || [])
+    } catch (err) {
+      console.error('Failed to load categories:', err)
+    } finally {
+      setLoading(false)
+    }
+  }
+
+  useEffect(() => {
+    fetchCategories()
+  }, [])
 
   const handleOpenCreate = () => {
     setEditingItem(null)
@@ -30,46 +47,50 @@ export default function CategoriesPage() {
     setIsModalOpen(true)
   }
 
-  const handleSave = (e) => {
+  const handleSave = async (e) => {
     e.preventDefault()
-    if (editingItem) {
-      setCategories((prev) =>
-        prev.map((c) =>
-          c.id === editingItem.id
-            ? { ...c, name, slug: slugify(name), description }
-            : c
-        )
-      )
-    } else {
-      const newCat = {
-        id: Date.now(),
-        name,
-        slug: slugify(name),
-        description,
-        productCount: 0,
-        createdAt: new Date().toISOString().split('T')[0],
+    try {
+      if (editingItem) {
+        await api.put(`/api/categories/${editingItem.id}`, {
+          name,
+          slug: slugify(name),
+          description,
+        })
+      } else {
+        await api.post('/api/categories', {
+          name,
+          slug: slugify(name),
+          description,
+        })
       }
-      setCategories((prev) => [newCat, ...prev])
+      setIsModalOpen(false)
+      fetchCategories()
+    } catch (err) {
+      console.error('Save failed:', err)
     }
-    setIsModalOpen(false)
   }
 
-  const handleDelete = () => {
-    setCategories((prev) => prev.filter((c) => c.id !== deleteId))
-    setDeleteId(null)
+  const handleDelete = async () => {
+    try {
+      await api.delete(`/api/categories/${deleteId}`)
+      setDeleteId(null)
+      fetchCategories()
+    } catch (err) {
+      console.error('Delete failed:', err)
+    }
   }
 
   const filtered = categories.filter(
     (c) =>
-      c.name.toLowerCase().includes(search.toLowerCase()) ||
-      c.slug.toLowerCase().includes(search.toLowerCase())
+      (c.name || '').toLowerCase().includes(search.toLowerCase()) ||
+      (c.slug || '').toLowerCase().includes(search.toLowerCase())
   )
 
   const columns = [
     { header: 'Kategori Adı', accessor: 'name', render: (row) => <span className="font-semibold text-slate-800">{row.name}</span> },
     { header: 'Kısa Kod (Slug)', accessor: 'slug', render: (row) => <code className="text-xs bg-slate-100 px-2 py-0.5 rounded text-slate-600">{row.slug}</code> },
     { header: 'Açıklama', accessor: 'description' },
-    { header: 'Ürün Sayısı', accessor: 'productCount', render: (row) => `${row.productCount} ürün` },
+    { header: 'Ürün Sayısı', accessor: 'product_count', render: (row) => `${row.product_count || 0} ürün` },
     {
       header: 'İşlemler',
       render: (row) => (
@@ -104,6 +125,7 @@ export default function CategoriesPage() {
         searchValue={search}
         onSearchChange={setSearch}
         searchPlaceholder="Kategori ara..."
+        loading={loading}
       />
 
       <Modal
