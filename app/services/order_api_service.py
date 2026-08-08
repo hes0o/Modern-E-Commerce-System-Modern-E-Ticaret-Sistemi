@@ -10,6 +10,7 @@ from app.core.exceptions import (
 )
 from app.models.address import Address
 from app.models.enums import OrderStatus
+from app.models.order import Order
 from app.models.user import User
 from app.repositories.address_repository import (
     get_address_by_id_and_user_id,
@@ -30,6 +31,7 @@ from app.schemas.order import (
     OrderListResponse,
     OrderResponse,
 )
+from app.services.email_service import send_email
 from app.services.order_service import (
     EmptyCartError,
     StockConflictError,
@@ -39,6 +41,16 @@ from app.services.order_service import (
 )
 from app.services.order_state_machine import InvalidStateTransition
 
+
+def get_order_recipient_email(
+    session: Session,
+    order: Order,
+) -> str | None:
+    if order.user_id is not None:
+        user = session.get(User, order.user_id)
+        return user.email if user is not None else None
+
+    return order.guest_email
 
 def address_to_snapshot(address: Address) -> dict:
     return {
@@ -153,6 +165,28 @@ def create_checkout_order(
             contract_version_accepted=payload.contract_version_accepted,
         )
         session.commit()
+
+        recipient_email = get_order_recipient_email(
+            session,
+            order,
+        )
+
+        if recipient_email:
+            send_email(
+                recipient=recipient_email,
+                subject=(
+                    f"Siparişiniz Alındı - "
+                    f"{order.order_number}"
+                ),
+                body=(
+                    f"Merhaba,\n\n"
+                    f"{order.order_number} numaralı siparişiniz "
+                    "başarıyla oluşturuldu.\n"
+                    f"Toplam tutar: {order.grand_total} TL\n"
+                    f"Sipariş durumu: {order.status.value}\n\n"
+                    "Teşekkür ederiz."
+                ),
+            )
 
     except EmptyCartError as error:
         session.rollback()
@@ -290,6 +324,26 @@ def cancel_my_order(
         )
         session.commit()
 
+        recipient_email = get_order_recipient_email(
+            session,
+            order,
+        )
+
+        if recipient_email:
+            send_email(
+                recipient=recipient_email,
+                subject=(
+                    f"Siparişiniz İptal Edildi - "
+                    f"{order.order_number}"
+                ),
+                body=(
+                    f"Merhaba,\n\n"
+                    f"{order.order_number} numaralı siparişiniz "
+                    "iptal edilmiştir.\n"
+                    "Sipariş için ayrılan stoklar iade edilmiştir."
+                ),
+            )
+
     except InvalidStateTransition as error:
         session.rollback()
         raise BusinessRuleError(
@@ -329,6 +383,25 @@ def change_order_status(
             note=note,
         )
         session.commit()
+
+        recipient_email = get_order_recipient_email(
+            session,
+            order,
+        )
+
+        if recipient_email:
+            send_email(
+                recipient=recipient_email,
+                subject=(
+                    f"Sipariş Durumu Güncellendi - "
+                    f"{order.order_number}"
+                ),
+                body=(
+                    f"Merhaba,\n\n"
+                    f"{order.order_number} numaralı siparişinizin "
+                    f"durumu '{new_status.value}' olarak güncellendi."
+                ),
+            )
 
     except InvalidStateTransition as error:
         session.rollback()
