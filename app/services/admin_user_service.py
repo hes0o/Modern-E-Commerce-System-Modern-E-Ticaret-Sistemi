@@ -22,6 +22,7 @@ from app.schemas.admin_user import (
     AdminUserResponse,
     AdminUserUpdate,
 )
+from app.services.audit_service import log_role_change
 
 
 def to_admin_user_response(
@@ -129,7 +130,7 @@ def update_admin_user(
 
     if user is None:
         raise NotFoundError("Kullanıcı bulunamadı.")
-
+    old_role_id = user.role_id
     update_data = payload.model_dump(exclude_unset=True)
 
     if user_id == current_admin_id:
@@ -163,6 +164,14 @@ def update_admin_user(
         setattr(user, field, value)
 
     user.updated_at = datetime.now(UTC)
+    if old_role_id != user.role_id:
+        log_role_change(
+            session,
+            target_user_id=user.id,
+            old_role_id=old_role_id,
+            new_role_id=user.role_id,
+            changed_by_user_id=current_admin_id,
+        )
     saved_user = save_admin_user(session, user)
 
     return to_admin_user_response(saved_user)

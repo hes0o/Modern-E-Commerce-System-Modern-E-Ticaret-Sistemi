@@ -16,6 +16,7 @@ from app.schemas.stock import (
     StockMovementResponse,
     StockUpdateRequest,
 )
+from app.services.audit_service import log_action
 from app.services.notification_service import queue_notification
 from app.services.stock_service import (
     InsufficientStockError,
@@ -109,6 +110,22 @@ def update_stock(
                     related_entity_type="product",
                     related_entity_id=product.id,
                 )
+        session.flush()
+
+        log_action(
+            session,
+            user_id=user_id,
+            action=f"stock.{payload.operation}",
+            entity_type="stock_movements",
+            entity_id=movement.id,
+            old_value={"stock": movement.stock_before},
+            new_value={
+                "stock": movement.stock_after,
+                "product_id": product_id,
+                "variant_id": payload.variant_id,
+            },
+        )
+
         session.commit()
         session.refresh(movement)
 

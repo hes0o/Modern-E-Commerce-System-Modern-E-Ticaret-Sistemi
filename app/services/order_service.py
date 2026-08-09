@@ -29,6 +29,7 @@ from app.models.cart import CartItem
 from app.models.enums import OrderStatus, PaymentMethod
 from app.models.order import Order, OrderItem, OrderStatusHistory
 from app.models.product import Product, ProductVariant
+from app.services.audit_service import log_action, log_order_status_change
 from app.services.notification_service import queue_notification
 from app.services.stock_service import InsufficientStockError, check_low_stock, reserve_stock
 
@@ -289,6 +290,19 @@ def create_order(
     for cart_item in cart_items:
         session.delete(cart_item)
 
+    log_action(
+        session,
+        user_id=user_id,
+        action="order.created",
+        entity_type="orders",
+        entity_id=order.id,
+        new_value={
+            "order_number": order.order_number,
+            "status": order.status.value,
+            "grand_total": float(order.grand_total),
+        },
+    )
+
     return order
 
 
@@ -358,6 +372,14 @@ def cancel_order(
             recipient_user_id=order.user_id,
         )
 
+    log_order_status_change(
+        session,
+        order_id=order.id,
+        old_status=old_status.value,
+        new_status=OrderStatus.CANCELLED.value,
+        user_id=cancelled_by_user_id,
+    )
+
     return order
 
 
@@ -422,5 +444,13 @@ def update_order_status(
             related_entity_id=order.id,
             recipient_user_id=order.user_id,
         )
+
+    log_order_status_change(
+        session,
+        order_id=order.id,
+        old_status=old_status.value,
+        new_status=new_status.value,
+        user_id=changed_by_user_id,
+    )
 
     return order

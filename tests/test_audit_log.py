@@ -11,12 +11,13 @@ can only be tested against PostgreSQL, not SQLite. Those tests should
 be run as integration tests with TEST_DATABASE_URL pointing to Postgres.
 """
 
-import pytest
 from sqlmodel import Session, select
 
 from app.models.audit import AuditLog
-from app.models.enums import ProductStatus
+from app.models.enums import PaymentMethod
 from app.models.product import Product
+from app.schemas.product import ProductUpdate
+from app.schemas.stock import StockUpdateRequest
 from app.services.audit_service import (
     audit_change,
     log_action,
@@ -24,6 +25,9 @@ from app.services.audit_service import (
     log_price_change,
     log_role_change,
 )
+from app.services.order_service import create_order
+from app.services.product_service import update_existing_product
+from app.services.stock_api_service import update_stock
 
 
 class TestLogAction:
@@ -200,3 +204,87 @@ class TestAuditLogImmutability:
         columns = {c.name for c in AuditLog.__table__.columns}
         assert "created_at" in columns
         assert "updated_at" not in columns
+
+class TestAuditServiceIntegrations:
+    """Critical services should automatically create audit entries."""
+
+    def test_order_creation_is_audited(
+        self,
+        seeded_session: Session,
+        sample_cart,
+        sample_user,
+    ):
+        order = create_order(
+            seeded_session,
+            cart_id=sample_cart.id,
+            user_id=sample_user.id,
+            shipping_address_snapshot={"city": "Elazığ"},
+            payment_method=PaymentMethod.COD,
+            contract_version_accepted="v1.0",
+        )
+        seeded_session.flush()
+
+        entry = seeded_session.exec(
+            select(AuditLog).where(
+                AuditLog.action == "order.created",
+                AuditLog.entity_id == order.id,
+            )
+        ).one()
+
+        assert entry.user_id == sample_user.id
+        assert entry.new_value["status"] == "pending"
+        assert entry.new_value["order_number"] == order.order_number
+
+    def test_product_price_update_is_audited(
+        self,
+        seeded_session: Session,
+        sample_product: Product,
+        sample_user,
+    ):
+        update_existing_product(
+            seeded_session,
+            sample_product.id,
+            ProductUpdate(price=125.0, discount_price=110.0),
+            changed_by_user_id=sample_user.id,
+        )
+
+        entry = seeded_session.exec(
+            select(AuditLog).where(
+                AuditLog.action == "product.price_updated",
+                AuditLog.entity_id == sample_product.id,
+            )
+        ).one()
+
+        assert entry.user_id == sample_user.id
+        assert entry.old_value["price"] == 100.0
+        assert entry.new_value["price"] == 125.0
+        assert entry.new_value["discount_price"] == 110.0
+
+    def test_manual_stock_update_is_audited(
+        self,
+        seeded_session: Session,
+        sample_product: Product,
+        sample_user,
+    ):
+        update_stock(
+            seeded_session,
+            product_id=sample_product.id,
+            user_id=sample_user.id,
+            payload=StockUpdateRequest(
+                operation="in",
+                quantity=3,
+                note="Audit integration test",
+            ),
+        )
+
+        entry = seeded_session.exec(
+            select(AuditLog).where(
+                AuditLog.action == "stock.in",
+                AuditLog.entity_id.is_not(None),
+            )
+        ).one()
+
+        assert entry.user_id == sample_user.id
+        assert entry.old_value["stock"] == 50
+        assert entry.new_value["stock"] == 53
+        assert entry.new_value["product_id"] == sample_product.id

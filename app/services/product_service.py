@@ -30,6 +30,7 @@ from app.schemas.product import (
     ProductResponse,
     ProductUpdate,
 )
+from app.services.audit_service import log_price_change
 from app.services.category_service import create_slug
 
 
@@ -273,8 +274,16 @@ def update_existing_product(
     session: Session,
     product_id: int,
     product_data: ProductUpdate,
+    *,
+    changed_by_user_id: int | None = None,
 ) -> Product:
     product = get_product(session, product_id)
+    old_price = float(product.price)
+    old_discount = (
+        float(product.discount_price)
+        if product.discount_price is not None
+        else None
+    )
     update_data = product_data.model_dump(
         exclude_unset=True,
     )
@@ -398,6 +407,27 @@ def update_existing_product(
 
     for field_name, value in update_data.items():
         setattr(product, field_name, value)
+
+    new_price_value = float(product.price)
+    new_discount_value = (
+        float(product.discount_price)
+        if product.discount_price is not None
+        else None
+    )
+
+    if changed_by_user_id is not None and (
+        old_price != new_price_value
+        or old_discount != new_discount_value
+    ):
+        log_price_change(
+            session,
+            product_id=product.id,
+            old_price=old_price,
+            new_price=new_price_value,
+            old_discount=old_discount,
+            new_discount=new_discount_value,
+            user_id=changed_by_user_id,
+        )
 
     return save_product(session, product)
 

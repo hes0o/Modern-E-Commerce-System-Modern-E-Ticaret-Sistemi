@@ -66,12 +66,13 @@ def replace_role_permissions(
     role_id: int,
     payload: RolePermissionUpdate,
     session: Annotated[Session, Depends(get_session)],
-    _admin: Annotated[User, Depends(require_permission("user.assign_role"))],
+    admin: Annotated[User, Depends(require_permission("user.assign_role"))],
 ) -> ApiResponse[RoleResponse]:
     role = update_role_permissions(
         session,
         role_id=role_id,
         payload=payload,
+        changed_by_user_id=admin.id,
     )
 
     return ApiResponse(

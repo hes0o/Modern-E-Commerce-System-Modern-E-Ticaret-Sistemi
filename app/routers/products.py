@@ -119,7 +119,7 @@ def update_product(
     product_id: int,
     product_data: ProductUpdate,
     session: Annotated[Session, Depends(get_session)],
-    _admin_user: Annotated[
+    admin_user: Annotated[
     User,
     Depends(require_permission("product.update")),
     ],
@@ -128,6 +128,7 @@ def update_product(
         session,
         product_id,
         product_data,
+        changed_by_user_id=admin_user.id,
     )
 
     return ApiResponse(

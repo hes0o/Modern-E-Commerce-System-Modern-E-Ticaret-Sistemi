@@ -18,6 +18,7 @@ from app.schemas.rbac import (
     RolePermissionUpdate,
     RoleResponse,
 )
+from app.services.audit_service import log_action
 
 
 def list_roles(
@@ -47,6 +48,7 @@ def update_role_permissions(
     *,
     role_id: int,
     payload: RolePermissionUpdate,
+    changed_by_user_id: int | None = None,
 ) -> RoleResponse:
     role = get_role_with_permissions(
         session,
@@ -61,6 +63,9 @@ def update_role_permissions(
             "Admin ve müşteri rollerinin izinleri değiştirilemez."
         )
 
+    old_permission_ids = sorted(
+        permission.id for permission in role.permissions
+    )
     permission_ids = list(
         dict.fromkeys(payload.permission_ids)
     )
@@ -76,6 +81,17 @@ def update_role_permissions(
 
     role.permissions = permissions
     role.updated_at = datetime.now(UTC)
+
+    log_action(
+        session,
+        user_id=changed_by_user_id,
+        action="role.permissions_updated",
+        entity_type="roles",
+        entity_id=role.id,
+        old_value={"permission_ids": old_permission_ids},
+        new_value={"permission_ids": sorted(permission_ids)},
+    )
+
     saved_role = save_role(session, role)
 
     return RoleResponse.model_validate(saved_role)
