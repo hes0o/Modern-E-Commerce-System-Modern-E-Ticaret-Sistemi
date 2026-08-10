@@ -5,6 +5,7 @@ from app.core.exceptions import (
     ConflictError,
     NotFoundError,
 )
+from app.core.html_sanitizer import sanitize_html
 from app.models.brand import Brand
 from app.models.enums import ProductStatus
 from app.models.product import Product
@@ -289,8 +290,8 @@ def create_new_product(
         short_description=(
             product_data.short_description.strip()
         ),
-        long_description=(
-            product_data.long_description.strip()
+        long_description=sanitize_html(
+            product_data.long_description
         ),
         seo_title=product_data.seo_title,
         seo_description=product_data.seo_description,
@@ -377,8 +378,8 @@ def update_existing_product(
         )
 
     if "long_description" in update_data:
-        update_data["long_description"] = (
-            update_data["long_description"].strip()
+        update_data["long_description"] = sanitize_html(
+            update_data["long_description"]
         )
 
     if (
