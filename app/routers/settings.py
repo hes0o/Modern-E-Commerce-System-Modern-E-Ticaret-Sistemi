@@ -4,14 +4,17 @@ from fastapi import APIRouter, Depends, status
 from sqlmodel import Session
 
 from app.core.dependencies import require_permission
+from app.core.exceptions import BusinessRuleError
 from app.database import get_session
 from app.models.user import User
 from app.schemas.common import ApiResponse
 from app.schemas.setting import (
+    EmailTestRequest,
     SettingCreate,
     SettingResponse,
     SettingUpdate,
 )
+from app.services.email_service import send_email
 from app.services.setting_service import (
     create_new_setting,
     list_settings,
@@ -64,6 +67,37 @@ def create_setting(
         message="Sistem ayarı oluşturuldu.",
     )
 
+@router.post(
+    "/test-email",
+    response_model=ApiResponse[None],
+)
+def test_email_configuration(
+    payload: EmailTestRequest,
+    _admin: Annotated[
+        User,
+        Depends(require_permission("settings.update")),
+    ],
+) -> ApiResponse[None]:
+    sent = send_email(
+        recipient=str(payload.recipient),
+        subject="SMTP Bağlantı Testi",
+        body=(
+            "Modern E-Ticaret sistemi SMTP bağlantısı "
+            "başarıyla çalışıyor."
+        ),
+    )
+
+    if not sent:
+        raise BusinessRuleError(
+            "Test e-postası gönderilemedi. "
+            "SMTP ayarlarını kontrol edin."
+        )
+
+    return ApiResponse(
+        success=True,
+        data=None,
+        message="Test e-postası başarıyla gönderildi.",
+    )
 
 @router.patch(
     "/{setting_id}",

@@ -149,3 +149,62 @@ def test_personnel_with_permission_can_access_dashboard(
 
     assert response.status_code == 200
     assert response.json()["success"] is True
+
+def test_admin_can_send_smtp_test_email(
+    client,
+    engine,
+    monkeypatch,
+):
+    token = create_admin_token(client, engine)
+    sent_messages = []
+
+    def fake_send_email(**kwargs):
+        sent_messages.append(kwargs)
+        return True
+
+    monkeypatch.setattr(
+        "app.routers.settings.send_email",
+        fake_send_email,
+    )
+
+    response = client.post(
+        "/api/admin/settings/test-email",
+        headers={
+            "Authorization": f"Bearer {token}",
+        },
+        json={
+            "recipient": "smtp.test@example.com",
+        },
+    )
+
+    assert response.status_code == 200
+    assert response.json()["success"] is True
+    assert sent_messages[0]["recipient"] == (
+        "smtp.test@example.com"
+    )
+
+
+def test_smtp_test_email_reports_delivery_failure(
+    client,
+    engine,
+    monkeypatch,
+):
+    token = create_admin_token(client, engine)
+
+    monkeypatch.setattr(
+        "app.routers.settings.send_email",
+        lambda **kwargs: False,
+    )
+
+    response = client.post(
+        "/api/admin/settings/test-email",
+        headers={
+            "Authorization": f"Bearer {token}",
+        },
+        json={
+            "recipient": "smtp.test@example.com",
+        },
+    )
+
+    assert response.status_code == 422
+    assert response.json()["success"] is False

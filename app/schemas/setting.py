@@ -1,7 +1,10 @@
 from datetime import datetime
 
-from pydantic import BaseModel, ConfigDict, Field
+from pydantic import BaseModel, ConfigDict, EmailStr, Field
 
+
+class EmailTestRequest(BaseModel):
+    recipient: EmailStr
 
 class SettingCreate(BaseModel):
     key: str = Field(
