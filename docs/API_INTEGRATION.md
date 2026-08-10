@@ -314,6 +314,8 @@ Admin notu ve kargo takip güncelleme:
 | İzinler | `GET /api/admin/rbac/permissions` |
 | Satış raporu | `GET /api/admin/reports/sales` |
 | CSV raporu | `GET /api/admin/reports/sales/export.csv` |
+| Excel raporu | `GET /api/admin/reports/sales/export.xlsx` |
+| PDF raporu | `GET /api/admin/reports/sales/export.pdf` |
 
 Admin paneli mock veriler yerine bu endpoint’leri kullanmalıdır.
 
@@ -325,6 +327,7 @@ Admin paneli mock veriler yerine bu endpoint’leri kullanmalıdır.
 - `409`: Çakışma veya yetersiz stok
 - `422`: İş kuralı ihlali
 - `429`: Rate limit aşıldı
+- `503`: Sistem bakım modunda
 
 Frontend, `403` cevabında kullanıcıyı çıkış yaptırmamalı; yalnızca yetkisiz işlem mesajı göstermelidir.
 
