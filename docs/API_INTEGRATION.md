@@ -20,6 +20,18 @@ Backend’i çalıştırma:
 python -m uvicorn app.main:app --reload
 ```
 
+### Bakım Modu
+
+Backend `.env` dosyasında bakım modu şu değişkenle yönetilir:
+
+```env
+MAINTENANCE_MODE=false
+```
+
+`MAINTENANCE_MODE=true` yapılıp backend yeniden başlatıldığında müşteri API’leri `503 Service Unavailable` döndürür. Admin API’leri, giriş endpoint’i ve Swagger dokümantasyonu erişilebilir kalır.
+
+Frontend, `503` yanıtı aldığında kullanıcıya sistemin geçici olarak bakımda olduğunu bildiren bir ekran veya mesaj göstermelidir.
+
 ## 2. Standart Response Yapısı
 
 Bütün JSON endpoint’leri şu yapıyı döndürür:
