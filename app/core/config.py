@@ -33,6 +33,19 @@ class Settings:
         )
     )
 
+    login_max_failed_attempts: int = int(
+        os.getenv(
+            "LOGIN_MAX_FAILED_ATTEMPTS",
+            "5",
+        )
+    )
+    login_lock_minutes: int = int(
+        os.getenv(
+            "LOGIN_LOCK_MINUTES",
+            "15",
+        )
+    )
+
     email_enabled: bool = os.getenv(
         "EMAIL_ENABLED",
         "false",

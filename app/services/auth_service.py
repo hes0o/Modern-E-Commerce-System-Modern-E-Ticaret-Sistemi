@@ -1,8 +1,9 @@
-from datetime import UTC, datetime
+from datetime import UTC, datetime, timedelta
 
 from sqlalchemy.exc import IntegrityError
 from sqlmodel import Session
 
+from app.core.config import settings
 from app.core.exceptions import (
     AuthenticationError,
     ConflictError,
@@ -107,7 +108,6 @@ def login_user(
     login: UserLogin,
 ) -> tuple[User, str]:
     normalized_email = str(login.email).lower()
-
     user = get_user_by_email(
         session,
         normalized_email,
@@ -118,10 +118,48 @@ def login_user(
             "E-posta veya şifre hatalı."
         )
 
+    now = datetime.now(UTC)
+    locked_until = user.locked_until
+
+    if (
+        locked_until is not None
+        and locked_until.tzinfo is None
+    ):
+        locked_until = locked_until.replace(tzinfo=UTC)
+
+    if locked_until is not None and locked_until > now:
+        raise ForbiddenError(
+            "Çok fazla başarısız giriş yapıldı. "
+            "Hesap geçici olarak kilitlendi."
+        )
+
+    if locked_until is not None:
+        user.locked_until = None
+        user.failed_login_attempts = 0
+
     if not verify_password(
         login.password,
         user.password_hash,
     ):
+        user.failed_login_attempts += 1
+
+        if (
+            user.failed_login_attempts
+            >= settings.login_max_failed_attempts
+        ):
+            user.locked_until = now + timedelta(
+                minutes=settings.login_lock_minutes
+            )
+
+        session.add(user)
+        session.commit()
+
+        if user.locked_until is not None:
+            raise ForbiddenError(
+                "Çok fazla başarısız giriş yapıldı. "
+                "Hesap geçici olarak kilitlendi."
+            )
+
         raise AuthenticationError(
             "E-posta veya şifre hatalı."
         )
@@ -131,7 +169,9 @@ def login_user(
             "Kullanıcı hesabı pasif durumdadır."
         )
 
-    user.last_login_at = datetime.now(UTC)
+    user.failed_login_attempts = 0
+    user.locked_until = None
+    user.last_login_at = now
     session.add(user)
     session.commit()
     session.refresh(user)
