@@ -10,6 +10,7 @@ from app.core.handlers import (
     unexpected_error_handler,
     validation_error_handler,
 )
+from app.core.maintenance import MaintenanceModeMiddleware
 from app.core.rate_limit import RateLimitMiddleware
 from app.core.security_headers import SecurityHeadersMiddleware
 from app.routers.addresses import router as addresses_router
@@ -42,7 +43,7 @@ app.add_middleware(
     request_limit=120,
     window_seconds=60,
 )
-
+app.add_middleware(MaintenanceModeMiddleware)
 app.add_middleware(
     CORSMiddleware,
     allow_origins=[

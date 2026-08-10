@@ -18,6 +18,10 @@ class Settings:
         "APP_ENV",
         "development",
     )
+    maintenance_mode: bool = os.getenv(
+        "MAINTENANCE_MODE",
+        "false",
+    ).lower() in {"1", "true", "yes"}
     secret_key: str = os.getenv(
         "SECRET_KEY",
         "change-me-in-production",
