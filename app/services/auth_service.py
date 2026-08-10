@@ -1,17 +1,23 @@
+import hmac
 from datetime import UTC, datetime, timedelta
 
+import jwt
 from sqlalchemy.exc import IntegrityError
 from sqlmodel import Session
 
 from app.core.config import settings
 from app.core.exceptions import (
     AuthenticationError,
+    BusinessRuleError,
     ConflictError,
     ForbiddenError,
     NotFoundError,
 )
 from app.core.security import (
     create_access_token,
+    create_password_reset_token,
+    decode_password_reset_token,
+    get_password_hash_fingerprint,
     hash_password,
     verify_password,
 )
@@ -23,11 +29,14 @@ from app.repositories.user_repository import (
 )
 from app.schemas.auth import (
     PasswordChange,
+    PasswordResetConfirm,
+    PasswordResetRequest,
     UserLogin,
     UserProfileUpdate,
     UserRegister,
 )
 from app.services.audit_service import log_action
+from app.services.email_service import send_email
 from app.services.notification_service import queue_notification
 
 
@@ -321,3 +330,145 @@ def change_user_password(
 
     session.add(user)
     session.commit()
+
+def request_password_reset(
+    session: Session,
+    payload: PasswordResetRequest,
+    *,
+    ip_address: str | None = None,
+) -> None:
+    normalized_email = str(payload.email).strip().lower()
+    user = get_user_by_email(
+        session,
+        normalized_email,
+    )
+
+    if (
+        user is None
+        or not user.is_active
+        or user.id is None
+    ):
+        return
+
+    token = create_password_reset_token(
+        user.id,
+        current_password_hash=user.password_hash,
+    )
+    reset_url = (
+        f"{settings.password_reset_url}?token={token}"
+    )
+
+    send_email(
+        recipient=user.email,
+        subject="Şifre Sıfırlama Talebi",
+        body=(
+            f"Merhaba {user.name},\n\n"
+            "Şifrenizi sıfırlamak için aşağıdaki "
+            "bağlantıyı kullanın:\n\n"
+            f"{reset_url}\n\n"
+            "Bu bağlantı "
+            f"{settings.password_reset_expire_minutes} "
+            "dakika geçerlidir.\n"
+            "Bu talebi siz oluşturmadıysanız "
+            "bu e-postayı yok sayabilirsiniz."
+        ),
+    )
+
+    log_action(
+        session,
+        user_id=user.id,
+        action="auth.password_reset_requested",
+        entity_type="users",
+        entity_id=user.id,
+        new_value={
+            "delivery_requested": True,
+        },
+        ip_address=ip_address,
+    )
+    session.commit()
+
+
+def reset_user_password(
+    session: Session,
+    payload: PasswordResetConfirm,
+    *,
+    ip_address: str | None = None,
+) -> None:
+    try:
+        token_payload = decode_password_reset_token(
+            payload.token
+        )
+        user_id = int(token_payload["sub"])
+    except (
+        jwt.InvalidTokenError,
+        KeyError,
+        TypeError,
+        ValueError,
+    ) as error:
+        raise AuthenticationError(
+            "Şifre sıfırlama bağlantısı geçersiz "
+            "veya süresi dolmuş."
+        ) from error
+
+    user = session.get(User, user_id)
+
+    if (
+        user is None
+        or not user.is_active
+        or user.id is None
+    ):
+        raise AuthenticationError(
+            "Şifre sıfırlama bağlantısı geçersiz "
+            "veya süresi dolmuş."
+        )
+
+    token_password_version = str(
+        token_payload.get(
+            "password_version",
+            "",
+        )
+    )
+    current_password_version = (
+        get_password_hash_fingerprint(
+            user.password_hash
+        )
+    )
+
+    if not hmac.compare_digest(
+        token_password_version,
+        current_password_version,
+    ):
+        raise AuthenticationError(
+            "Şifre sıfırlama bağlantısı geçersiz "
+            "veya daha önce kullanılmış."
+        )
+
+    if verify_password(
+        payload.new_password,
+        user.password_hash,
+    ):
+        raise BusinessRuleError(
+            "Yeni şifre mevcut şifreden farklı olmalıdır."
+        )
+
+    user.password_hash = hash_password(
+        payload.new_password
+    )
+    user.failed_login_attempts = 0
+    user.locked_until = None
+    session.add(user)
+
+    log_action(
+        session,
+        user_id=user.id,
+        action="auth.password_reset_completed",
+        entity_type="users",
+        entity_id=user.id,
+        new_value={
+            "password_changed": True,
+        },
+        ip_address=ip_address,
+    )
+
+    session.commit()
+    session.refresh(user)

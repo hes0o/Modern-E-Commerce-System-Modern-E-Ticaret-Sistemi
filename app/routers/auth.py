@@ -9,6 +9,8 @@ from app.database import get_session
 from app.models.user import User
 from app.schemas.auth import (
     PasswordChange,
+    PasswordResetConfirm,
+    PasswordResetRequest,
     TokenResponse,
     UserLogin,
     UserProfileUpdate,
@@ -20,6 +22,8 @@ from app.services.auth_service import (
     change_user_password,
     login_user,
     register_user,
+    request_password_reset,
+    reset_user_password,
     update_user_profile,
 )
 
@@ -90,6 +94,59 @@ def login(
         message=f"Hoş geldiniz, {user.name}.",
     )
 
+@router.post(
+    "/password/forgot",
+    response_model=ApiResponse[None],
+)
+def forgot_password(
+    request: Request,
+    payload: PasswordResetRequest,
+    session: Annotated[Session, Depends(get_session)],
+) -> ApiResponse[None]:
+    request_password_reset(
+        session,
+        payload,
+        ip_address=(
+            request.client.host
+            if request.client is not None
+            else None
+        ),
+    )
+
+    return ApiResponse(
+        success=True,
+        data=None,
+        message=(
+            "E-posta adresi sistemde kayıtlıysa "
+            "şifre sıfırlama bağlantısı gönderildi."
+        ),
+    )
+
+
+@router.post(
+    "/password/reset",
+    response_model=ApiResponse[None],
+)
+def confirm_password_reset(
+    request: Request,
+    payload: PasswordResetConfirm,
+    session: Annotated[Session, Depends(get_session)],
+) -> ApiResponse[None]:
+    reset_user_password(
+        session,
+        payload,
+        ip_address=(
+            request.client.host
+            if request.client is not None
+            else None
+        ),
+    )
+
+    return ApiResponse(
+        success=True,
+        data=None,
+        message="Şifre başarıyla sıfırlandı.",
+    )
 
 @router.get(
     "/me",

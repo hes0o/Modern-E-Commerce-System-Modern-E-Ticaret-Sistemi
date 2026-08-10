@@ -113,3 +113,35 @@ class PasswordChange(BaseModel):
             )
 
         return self
+
+class PasswordResetRequest(BaseModel):
+    email: EmailStr
+
+
+class PasswordResetConfirm(BaseModel):
+    token: str = Field(
+        min_length=20,
+        max_length=2000,
+    )
+    new_password: str = Field(
+        min_length=8,
+        max_length=128,
+    )
+    new_password_confirm: str = Field(
+        min_length=8,
+        max_length=128,
+    )
+
+    @model_validator(mode="after")
+    def validate_password_reset(
+        self,
+    ) -> "PasswordResetConfirm":
+        if (
+            self.new_password
+            != self.new_password_confirm
+        ):
+            raise ValueError(
+                "Yeni şifreler birbiriyle eşleşmiyor."
+            )
+
+        return self

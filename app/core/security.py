@@ -1,3 +1,4 @@
+import hashlib
 from datetime import UTC, datetime, timedelta
 from typing import Any
 
@@ -52,8 +53,68 @@ def create_access_token(
 def decode_access_token(
     token: str,
 ) -> dict[str, Any]:
-    return jwt.decode(
+    payload = jwt.decode(
         token,
         settings.secret_key,
         algorithms=[settings.jwt_algorithm],
     )
+
+    if payload.get("type") != "access":
+        raise jwt.InvalidTokenError(
+            "Invalid access token type."
+        )
+
+    return payload
+
+def get_password_hash_fingerprint(
+    hashed_password: str,
+) -> str:
+    return hashlib.sha256(
+        hashed_password.encode("utf-8")
+    ).hexdigest()
+
+
+def create_password_reset_token(
+    subject: str | int,
+    *,
+    current_password_hash: str,
+) -> str:
+    now = datetime.now(UTC)
+    expires_at = now + timedelta(
+        minutes=settings.password_reset_expire_minutes
+    )
+
+    payload: dict[str, Any] = {
+        "sub": str(subject),
+        "iat": now,
+        "exp": expires_at,
+        "type": "password_reset",
+        "password_version": (
+            get_password_hash_fingerprint(
+                current_password_hash
+            )
+        ),
+    }
+
+    return jwt.encode(
+        payload,
+        settings.secret_key,
+        algorithm=settings.jwt_algorithm,
+    )
+
+
+def decode_password_reset_token(
+    token: str,
+) -> dict[str, Any]:
+    payload = jwt.decode(
+        token,
+        settings.secret_key,
+        algorithms=[settings.jwt_algorithm],
+    )
+
+    if payload.get("type") != "password_reset":
+        raise jwt.InvalidTokenError(
+            "Invalid password reset token type."
+        )
+
+    return payload

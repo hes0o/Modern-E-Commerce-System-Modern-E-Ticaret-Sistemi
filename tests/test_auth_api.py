@@ -254,3 +254,104 @@ def test_account_lock_creates_audit_log(
 
         assert audit_log is not None
         assert audit_log.new_value["locked_until"] is not None
+
+def test_password_reset_flow(
+    client,
+    monkeypatch,
+):
+    sent_messages = []
+
+    def fake_send_email(**kwargs):
+        sent_messages.append(kwargs)
+        return True
+
+    monkeypatch.setattr(
+        "app.services.auth_service.send_email",
+        fake_send_email,
+    )
+
+    client.post(
+        "/api/auth/register",
+        json={
+            "name": "Şifre Sıfırlama Testi",
+            "email": "reset.test@example.com",
+            "phone": None,
+            "password": "OldPass123!",
+            "password_confirm": "OldPass123!",
+            "kvkk_accepted": True,
+            "newsletter_allowed": False,
+        },
+    )
+
+    forgot_response = client.post(
+        "/api/auth/password/forgot",
+        json={
+            "email": "reset.test@example.com",
+        },
+    )
+
+    assert forgot_response.status_code == 200
+    assert len(sent_messages) == 1
+
+    reset_token = (
+        sent_messages[0]["body"]
+        .split("?token=", 1)[1]
+        .splitlines()[0]
+    )
+
+    access_response = client.get(
+        "/api/auth/me",
+        headers={
+            "Authorization": f"Bearer {reset_token}",
+        },
+    )
+    assert access_response.status_code == 401
+
+    reset_response = client.post(
+        "/api/auth/password/reset",
+        json={
+            "token": reset_token,
+            "new_password": "NewPass123!",
+            "new_password_confirm": "NewPass123!",
+        },
+    )
+
+    assert reset_response.status_code == 200
+    assert reset_response.json()["success"] is True
+
+    old_login_response = client.post(
+        "/api/auth/login",
+        json={
+            "email": "reset.test@example.com",
+            "password": "OldPass123!",
+        },
+    )
+    assert old_login_response.status_code == 401
+
+    new_login_response = client.post(
+        "/api/auth/login",
+        json={
+            "email": "reset.test@example.com",
+            "password": "NewPass123!",
+        },
+    )
+    assert new_login_response.status_code == 200
+
+    reused_token_response = client.post(
+        "/api/auth/password/reset",
+        json={
+            "token": reset_token,
+            "new_password": "AnotherPass123!",
+            "new_password_confirm": "AnotherPass123!",
+        },
+    )
+    assert reused_token_response.status_code == 401
+
+    unknown_response = client.post(
+        "/api/auth/password/forgot",
+        json={
+            "email": "unknown.reset@example.com",
+        },
+    )
+    assert unknown_response.status_code == 200
+    assert len(sent_messages) == 1

@@ -27,6 +27,13 @@ Backend `.env` dosyasında bakım modu şu değişkenle yönetilir:
 ```env
 MAINTENANCE_MODE=false
 ```
+Parola sıfırlama bağlantısının frontend adresi backend `.env` dosyasında belirlenir:
+
+```env
+PASSWORD_RESET_EXPIRE_MINUTES=30
+PASSWORD_RESET_URL=http://localhost:5173/reset-password
+```
+
 
 `MAINTENANCE_MODE=true` yapılıp backend yeniden başlatıldığında müşteri API’leri `503 Service Unavailable` döndürür. Admin API’leri, giriş endpoint’i ve Swagger dokümantasyonu erişilebilir kalır.
 
@@ -91,7 +98,8 @@ Rol değerleri:
 | GET | `/api/auth/me` | Oturum sahibini getir |
 | PATCH | `/api/auth/me` | Profil güncelle |
 | PATCH | `/api/auth/me/password` | Şifre değiştir |
-
+| POST | `/api/auth/password/forgot` | Şifre sıfırlama bağlantısı iste |
+| POST | `/api/auth/password/reset` | Token ile yeni şifre belirle |
 Kayıt body:
 
 ```json
@@ -118,6 +126,26 @@ Profil güncelleme alanları:
 - `current_password`
 - `new_password`
 - `new_password_confirm`
+
+Şifremi unuttum body:
+
+```json
+{
+  "email": "user@example.com"
+}
+```
+
+Şifre sıfırlama body:
+
+```json
+{
+  "token": "e-posta-bağlantısındaki-token",
+  "new_password": "NewPass123!",
+  "new_password_confirm": "NewPass123!"
+}
+```
+
+Frontend sıfırlama sayfası token değerini URL’deki `?token=` parametresinden almalıdır.
 
 ## 5. Katalog Endpoint’leri
 
@@ -333,9 +361,7 @@ Frontend, `403` cevabında kullanıcıyı çıkış yaptırmamalı; yalnızca ye
 
 ## 12. Bilinen Sınırlamalar
 
-- Şifremi unuttum/sıfırlama endpoint’leri henüz yok.
 - `terms_accepted` backend’e kaydedilmiyor.
-- Ürünler slug yerine sayısal `product_id` ile getiriliyor.
-- Marka, fiyat, renk ve beden filtreleri henüz yok.
 - `supplier` alanı veritabanında yok.
+- Renk ve beden filtreleri ürün listesi seviyesinde henüz yok.
 - Frontend branch’leri backend ile ortak Git geçmişine sahip değildir; entegrasyon kontrollü bir branch üzerinde yapılmalıdır.

@@ -37,6 +37,17 @@ class Settings:
         )
     )
 
+    password_reset_expire_minutes: int = int(
+        os.getenv(
+            "PASSWORD_RESET_EXPIRE_MINUTES",
+            "30",
+        )
+    )
+    password_reset_url: str = os.getenv(
+        "PASSWORD_RESET_URL",
+        "http://localhost:5173/reset-password",
+    )
+
     login_max_failed_attempts: int = int(
         os.getenv(
             "LOGIN_MAX_FAILED_ATTEMPTS",
