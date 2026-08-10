@@ -1,6 +1,6 @@
 from typing import Annotated
 
-from fastapi import APIRouter, Depends, status
+from fastapi import APIRouter, Depends, Request, status
 from sqlmodel import Session
 
 from app.core.config import settings
@@ -64,17 +64,26 @@ def register(
     response_model=ApiResponse[TokenResponse],
 )
 def login(
+    request: Request,
     login_data: UserLogin,
     session: Annotated[Session, Depends(get_session)],
 ) -> ApiResponse[TokenResponse]:
-    user, access_token = login_user(session, login_data)
-
+    user, access_token = login_user(
+        session,
+        login_data,
+        ip_address=(
+            request.client.host
+            if request.client is not None
+            else None
+        ),
+    )
     token_response = TokenResponse(
         access_token=access_token,
         token_type="bearer",
-        expires_in=settings.access_token_expire_minutes * 60,
+        expires_in=(
+            settings.access_token_expire_minutes * 60
+        ),
     )
-
     return ApiResponse(
         success=True,
         data=token_response,

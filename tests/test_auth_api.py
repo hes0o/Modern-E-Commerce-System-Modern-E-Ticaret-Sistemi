@@ -3,6 +3,7 @@ from datetime import UTC, datetime, timedelta
 from sqlmodel import Session, select
 
 from app.core.config import settings
+from app.models.audit import AuditLog
 from app.models.user import User
 
 
@@ -170,3 +171,86 @@ def test_expired_lock_allows_login(client, engine):
 
     assert response.status_code == 200
     assert response.json()["success"] is True
+
+def test_failed_login_creates_audit_log(
+    client,
+    engine,
+):
+    client.post(
+        "/api/auth/register",
+        json={
+            "name": "Audit Giriş Testi",
+            "email": "audit.login@example.com",
+            "phone": None,
+            "password": "Test1234!",
+            "password_confirm": "Test1234!",
+            "kvkk_accepted": True,
+            "newsletter_allowed": False,
+        },
+    )
+
+    response = client.post(
+        "/api/auth/login",
+        json={
+            "email": "audit.login@example.com",
+            "password": "Wrong1234!",
+        },
+    )
+
+    assert response.status_code == 401
+
+    with Session(engine) as session:
+        audit_log = session.exec(
+            select(AuditLog).where(
+                AuditLog.action == "auth.login_failed",
+                AuditLog.entity_type == "users",
+            )
+        ).first()
+
+        assert audit_log is not None
+        assert audit_log.new_value[
+            "failed_login_attempts"
+        ] == 1
+        assert audit_log.ip_address == "testclient"
+
+
+def test_account_lock_creates_audit_log(
+    client,
+    engine,
+):
+    client.post(
+        "/api/auth/register",
+        json={
+            "name": "Audit Kilit Testi",
+            "email": "audit.lock@example.com",
+            "phone": None,
+            "password": "Test1234!",
+            "password_confirm": "Test1234!",
+            "kvkk_accepted": True,
+            "newsletter_allowed": False,
+        },
+    )
+
+    for _ in range(
+        settings.login_max_failed_attempts
+    ):
+        response = client.post(
+            "/api/auth/login",
+            json={
+                "email": "audit.lock@example.com",
+                "password": "Wrong1234!",
+            },
+        )
+
+    assert response.status_code == 403
+
+    with Session(engine) as session:
+        audit_log = session.exec(
+            select(AuditLog).where(
+                AuditLog.action
+                == "auth.account_locked",
+            )
+        ).first()
+
+        assert audit_log is not None
+        assert audit_log.new_value["locked_until"] is not None

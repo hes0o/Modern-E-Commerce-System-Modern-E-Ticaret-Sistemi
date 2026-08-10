@@ -27,6 +27,7 @@ from app.schemas.auth import (
     UserProfileUpdate,
     UserRegister,
 )
+from app.services.audit_service import log_action
 from app.services.notification_service import queue_notification
 
 
@@ -106,6 +107,8 @@ def register_user(
 def login_user(
     session: Session,
     login: UserLogin,
+    *,
+    ip_address: str | None = None,
 ) -> tuple[User, str]:
     normalized_email = str(login.email).lower()
     user = get_user_by_email(
@@ -114,6 +117,19 @@ def login_user(
     )
 
     if user is None:
+        log_action(
+            session,
+            user_id=None,
+            action="auth.login_failed",
+            entity_type="authentication",
+            entity_id=0,
+            new_value={
+                "reason": "unknown_user",
+            },
+            ip_address=ip_address,
+        )
+        session.commit()
+
         raise AuthenticationError(
             "E-posta veya şifre hatalı."
         )
@@ -128,6 +144,20 @@ def login_user(
         locked_until = locked_until.replace(tzinfo=UTC)
 
     if locked_until is not None and locked_until > now:
+        log_action(
+            session,
+            user_id=user.id,
+            action="auth.login_blocked",
+            entity_type="users",
+            entity_id=user.id,
+            new_value={
+                "reason": "account_locked",
+                "locked_until": locked_until.isoformat(),
+            },
+            ip_address=ip_address,
+        )
+        session.commit()
+
         raise ForbiddenError(
             "Çok fazla başarısız giriş yapıldı. "
             "Hesap geçici olarak kilitlendi."
@@ -151,6 +181,29 @@ def login_user(
                 minutes=settings.login_lock_minutes
             )
 
+        log_action(
+            session,
+            user_id=user.id,
+            action=(
+                "auth.account_locked"
+                if user.locked_until is not None
+                else "auth.login_failed"
+            ),
+            entity_type="users",
+            entity_id=user.id,
+            new_value={
+                "failed_login_attempts": (
+                    user.failed_login_attempts
+                ),
+                "locked_until": (
+                    user.locked_until.isoformat()
+                    if user.locked_until is not None
+                    else None
+                ),
+            },
+            ip_address=ip_address,
+        )
+
         session.add(user)
         session.commit()
 
@@ -165,6 +218,19 @@ def login_user(
         )
 
     if not user.is_active:
+        log_action(
+            session,
+            user_id=user.id,
+            action="auth.login_blocked",
+            entity_type="users",
+            entity_id=user.id,
+            new_value={
+                "reason": "inactive_account",
+            },
+            ip_address=ip_address,
+        )
+        session.commit()
+
         raise ForbiddenError(
             "Kullanıcı hesabı pasif durumdadır."
         )
