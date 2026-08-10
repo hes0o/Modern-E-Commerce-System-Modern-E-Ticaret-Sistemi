@@ -33,5 +33,51 @@ class Settings:
         )
     )
 
+    login_max_failed_attempts: int = int(
+        os.getenv(
+            "LOGIN_MAX_FAILED_ATTEMPTS",
+            "5",
+        )
+    )
+    login_lock_minutes: int = int(
+        os.getenv(
+            "LOGIN_LOCK_MINUTES",
+            "15",
+        )
+    )
+
+    email_enabled: bool = os.getenv(
+        "EMAIL_ENABLED",
+        "false",
+    ).lower() in {"1", "true", "yes"}
+
+    smtp_host: str = os.getenv(
+        "SMTP_HOST",
+        "localhost",
+    )
+    smtp_port: int = int(
+        os.getenv(
+            "SMTP_PORT",
+            "587",
+        )
+    )
+    smtp_username: str | None = os.getenv(
+        "SMTP_USERNAME",
+    )
+    smtp_password: str | None = os.getenv(
+        "SMTP_PASSWORD",
+    )
+    smtp_from_email: str = os.getenv(
+        "SMTP_FROM_EMAIL",
+        "noreply@example.com",
+    )
+    smtp_from_name: str = os.getenv(
+        "SMTP_FROM_NAME",
+        "Modern E-Ticaret",
+    )
+    smtp_use_tls: bool = os.getenv(
+        "SMTP_USE_TLS",
+        "true",
+    ).lower() in {"1", "true", "yes"}
 
 settings = Settings()
