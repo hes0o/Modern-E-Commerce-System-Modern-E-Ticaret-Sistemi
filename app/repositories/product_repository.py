@@ -12,6 +12,14 @@ def get_products(
     page_size: int = 20,
     search: str | None = None,
     category_id: int | None = None,
+    brand_id: int | None = None,
+    min_price: float | None = None,
+    max_price: float | None = None,
+    is_new: bool | None = None,
+    is_bestseller: bool | None = None,
+    is_featured: bool | None = None,
+    is_campaign: bool | None = None,
+    sort: str = "newest",
     status: ProductStatus | None = ProductStatus.PUBLISHED,
 ) -> tuple[list[Product], int]:
     statement = select(Product)
@@ -31,6 +39,39 @@ def get_products(
             category_condition,
         )
 
+    if brand_id is not None:
+        brand_condition = col(Product.brand_id) == brand_id
+        statement = statement.where(brand_condition)
+        count_statement = count_statement.where(brand_condition)
+
+    effective_price = func.coalesce(
+        Product.discount_price,
+        Product.price,
+    )
+
+    if min_price is not None:
+        min_price_condition = effective_price >= min_price
+        statement = statement.where(min_price_condition)
+        count_statement = count_statement.where(min_price_condition)
+
+    if max_price is not None:
+        max_price_condition = effective_price <= max_price
+        statement = statement.where(max_price_condition)
+        count_statement = count_statement.where(max_price_condition)
+
+    boolean_filters = (
+        (Product.is_new, is_new),
+        (Product.is_bestseller, is_bestseller),
+        (Product.is_featured, is_featured),
+        (Product.is_campaign, is_campaign),
+    )
+
+    for field, value in boolean_filters:
+        if value is not None:
+            condition = col(field) == value
+            statement = statement.where(condition)
+            count_statement = count_statement.where(condition)
+
     if search:
         search_term = f"%{search.strip()}%"
         search_condition = or_(
@@ -43,13 +84,30 @@ def get_products(
             search_condition,
         )
 
-    statement = (
-        statement.order_by(
-            col(Product.created_at).desc(),
+    if sort == "price_asc":
+        statement = statement.order_by(
+            effective_price.asc(),
+            col(Product.id).desc(),
         )
-        .offset((page - 1) * page_size)
-        .limit(page_size)
-    )
+    elif sort == "price_desc":
+        statement = statement.order_by(
+            effective_price.desc(),
+            col(Product.id).desc(),
+        )
+    elif sort == "name_asc":
+        statement = statement.order_by(
+            col(Product.name).asc(),
+            col(Product.id).desc(),
+        )
+    else:
+        statement = statement.order_by(
+            col(Product.created_at).desc(),
+            col(Product.id).desc(),
+        )
+
+    statement = statement.offset(
+        (page - 1) * page_size
+    ).limit(page_size)
 
     products = list(session.exec(statement).all())
     total = session.exec(count_statement).one()

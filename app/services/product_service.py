@@ -148,13 +148,37 @@ def list_products(
     page_size: int,
     search: str | None,
     category_id: int | None,
+    brand_id: int | None,
+    min_price: float | None,
+    max_price: float | None,
+    is_new: bool | None,
+    is_bestseller: bool | None,
+    is_featured: bool | None,
+    is_campaign: bool | None,
+    sort: str,
 ) -> ProductListResponse:
+    if (
+        min_price is not None
+        and max_price is not None
+        and min_price > max_price
+    ):
+        raise BusinessRuleError(
+            "Minimum fiyat, maksimum fiyattan büyük olamaz."
+        )
     products, total = get_products(
         session,
         page=page,
         page_size=page_size,
         search=search,
         category_id=category_id,
+        brand_id=brand_id,
+        min_price=min_price,
+        max_price=max_price,
+        is_new=is_new,
+        is_bestseller=is_bestseller,
+        is_featured=is_featured,
+        is_campaign=is_campaign,
+        sort=sort,
         status=ProductStatus.PUBLISHED,
     )
 
@@ -194,6 +218,22 @@ def get_product(
 
     return product
 
+def get_product_by_slug_detail(
+    session: Session,
+    slug: str,
+) -> Product:
+    product = get_product_by_slug(
+        session,
+        slug.strip().lower(),
+    )
+
+    if (
+        product is None
+        or product.status != ProductStatus.PUBLISHED
+    ):
+        raise NotFoundError("Ürün bulunamadı.")
+
+    return product
 
 def create_new_product(
     session: Session,

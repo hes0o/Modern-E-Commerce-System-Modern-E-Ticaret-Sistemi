@@ -1,4 +1,4 @@
-from typing import Annotated
+from typing import Annotated, Literal
 
 from fastapi import APIRouter, Depends, Query, status
 from sqlmodel import Session
@@ -17,6 +17,7 @@ from app.services.product_service import (
     archive_product,
     create_new_product,
     get_product,
+    get_product_by_slug_detail,
     list_products,
     update_existing_product,
 )
@@ -49,6 +50,28 @@ def get_product_list(
         int | None,
         Query(gt=0),
     ] = None,
+    brand_id: Annotated[
+        int | None,
+        Query(gt=0),
+    ] = None,
+    min_price: Annotated[
+        float | None,
+        Query(ge=0),
+    ] = None,
+    max_price: Annotated[
+        float | None,
+        Query(ge=0),
+    ] = None,
+    is_new: bool | None = None,
+    is_bestseller: bool | None = None,
+    is_featured: bool | None = None,
+    is_campaign: bool | None = None,
+    sort: Literal[
+        "newest",
+        "price_asc",
+        "price_desc",
+        "name_asc",
+    ] = "newest",
 ) -> ApiResponse[ProductListResponse]:
     result = list_products(
         session,
@@ -56,6 +79,14 @@ def get_product_list(
         page_size=page_size,
         search=search,
         category_id=category_id,
+        brand_id=brand_id,
+        min_price=min_price,
+        max_price=max_price,
+        is_new=is_new,
+        is_bestseller=is_bestseller,
+        is_featured=is_featured,
+        is_campaign=is_campaign,
+        sort=sort,
     )
 
     return ApiResponse(
@@ -64,6 +95,24 @@ def get_product_list(
         message="Ürünler getirildi.",
     )
 
+@router.get(
+    "/slug/{slug}",
+    response_model=ApiResponse[ProductResponse],
+)
+def get_product_detail_by_slug(
+    slug: str,
+    session: Annotated[Session, Depends(get_session)],
+) -> ApiResponse[ProductResponse]:
+    product = get_product_by_slug_detail(
+        session,
+        slug,
+    )
+
+    return ApiResponse(
+        success=True,
+        data=create_product_response(product),
+        message="Ürün getirildi.",
+    )
 
 @router.get(
     "/{product_id}",
