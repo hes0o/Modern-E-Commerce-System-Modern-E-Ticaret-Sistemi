@@ -7,10 +7,10 @@ Three related models:
 - `ProductVariant` — color/size variants with own SKU, stock, and price
 """
 
-from typing import Optional, List
+from typing import Optional
 
-from sqlalchemy import Numeric, CheckConstraint, Column, Index, Text
-from sqlmodel import Field, Relationship, SQLModel
+from sqlalchemy import CheckConstraint, Column, Index, Numeric, Text
+from sqlmodel import Field, Relationship
 
 from app.models.base import TimestampMixin
 from app.models.enums import ProductStatus
@@ -38,21 +38,26 @@ class Product(TimestampMixin, table=True):
         Index("ix_products_category_status", "category_id", "status"),
     )
 
-    id: Optional[int] = Field(default=None, primary_key=True)
+    id: int | None = Field(default=None, primary_key=True)
     category_id: int = Field(foreign_key="categories.id", index=True)
-    brand_id: Optional[int] = Field(default=None, foreign_key="brands.id", index=True)
+    brand_id: int | None = Field(default=None, foreign_key="brands.id", index=True)
+    supplier: str | None = Field(
+        default=None,
+        max_length=150,
+        index=True,
+    )
     sku: str = Field(max_length=60, unique=True, index=True)
-    barcode: Optional[str] = Field(default=None, max_length=60, unique=True)
+    barcode: str | None = Field(default=None, max_length=60, unique=True)
     name: str = Field(max_length=200)
     slug: str = Field(max_length=220, unique=True, index=True)
     short_description: str = Field(max_length=500)
     long_description: str = Field(sa_column=Column(Text, nullable=False))
-    seo_title: Optional[str] = Field(default=None, max_length=200)
-    seo_description: Optional[str] = Field(default=None, max_length=300)
+    seo_title: str | None = Field(default=None, max_length=200)
+    seo_description: str | None = Field(default=None, max_length=300)
 
     # Pricing
     price: float = Field(sa_column=Column(Numeric(10, 2)))
-    discount_price: Optional[float] = Field(
+    discount_price: float | None = Field(
         default=None, sa_column=Column(Numeric(10, 2))
     )
     vat_rate: float = Field(sa_column=Column(Numeric(5, 2)))
@@ -60,8 +65,8 @@ class Product(TimestampMixin, table=True):
     # Status & stock
     status: ProductStatus = Field(default=ProductStatus.DRAFT)
     has_variants: bool = Field(default=False)
-    stock: Optional[int] = Field(default=None)  # Only for non-variant products
-    min_stock_level: Optional[int] = Field(default=None)
+    stock: int | None = Field(default=None)  # Only for non-variant products
+    min_stock_level: int | None = Field(default=None)
 
     # Tags / badges
     is_new: bool = Field(default=False)
@@ -72,8 +77,8 @@ class Product(TimestampMixin, table=True):
     # Relationships
     category: "Category" = Relationship(back_populates="products")  # type: ignore[name-defined]  # noqa: F821
     brand: Optional["Brand"] = Relationship(back_populates="products")  # type: ignore[name-defined]  # noqa: F821
-    images: List["ProductImage"] = Relationship(back_populates="product")
-    variants: List["ProductVariant"] = Relationship(back_populates="product")
+    images: list["ProductImage"] = Relationship(back_populates="product")
+    variants: list["ProductVariant"] = Relationship(back_populates="product")
 
 
 class ProductImage(TimestampMixin, table=True):
@@ -81,7 +86,7 @@ class ProductImage(TimestampMixin, table=True):
 
     __tablename__ = "product_images"
 
-    id: Optional[int] = Field(default=None, primary_key=True)
+    id: int | None = Field(default=None, primary_key=True)
     product_id: int = Field(foreign_key="products.id", index=True)
     image_path: str = Field(max_length=255)
     is_cover: bool = Field(default=False)
@@ -108,18 +113,18 @@ class ProductVariant(TimestampMixin, table=True):
         Index("ix_variants_product_id", "product_id"),
     )
 
-    id: Optional[int] = Field(default=None, primary_key=True)
+    id: int | None = Field(default=None, primary_key=True)
     product_id: int = Field(foreign_key="products.id")
     sku: str = Field(max_length=60, unique=True, index=True)
-    color: Optional[str] = Field(default=None, max_length=50)
-    size: Optional[str] = Field(default=None, max_length=30)
-    price: Optional[float] = Field(default=None, sa_column=Column(Numeric(10, 2)))
-    discount_price: Optional[float] = Field(
+    color: str | None = Field(default=None, max_length=50)
+    size: str | None = Field(default=None, max_length=30)
+    price: float | None = Field(default=None, sa_column=Column(Numeric(10, 2)))
+    discount_price: float | None = Field(
         default=None, sa_column=Column(Numeric(10, 2))
     )
     stock: int = Field(default=0)
-    min_stock_level: Optional[int] = Field(default=None)
-    image_path: Optional[str] = Field(default=None, max_length=255)
+    min_stock_level: int | None = Field(default=None)
+    image_path: str | None = Field(default=None, max_length=255)
 
     # Relationships
     product: Product = Relationship(back_populates="variants")

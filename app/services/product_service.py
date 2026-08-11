@@ -283,6 +283,11 @@ def create_new_product(
     product = Product(
         category_id=product_data.category_id,
         brand_id=product_data.brand_id,
+        supplier=(
+            product_data.supplier.strip()
+            if product_data.supplier
+            else None
+        ),
         sku=sku,
         barcode=barcode,
         name=product_data.name.strip(),
@@ -328,6 +333,13 @@ def update_existing_product(
     update_data = product_data.model_dump(
         exclude_unset=True,
     )
+
+    if "supplier" in update_data:
+        update_data["supplier"] = (
+            update_data["supplier"].strip()
+            if update_data["supplier"]
+            else None
+        )
 
     if "category_id" in update_data:
         validate_category(

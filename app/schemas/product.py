@@ -8,6 +8,10 @@ from app.models.enums import ProductStatus
 class ProductCreate(BaseModel):
     category_id: int = Field(gt=0)
     brand_id: int | None = Field(default=None, gt=0)
+    supplier: str | None = Field(
+        default=None,
+        max_length=150,
+    )
     sku: str = Field(min_length=2, max_length=60)
     barcode: str | None = Field(default=None, max_length=60)
     name: str = Field(min_length=2, max_length=200)
@@ -60,6 +64,10 @@ class ProductCreate(BaseModel):
 class ProductUpdate(BaseModel):
     category_id: int | None = Field(default=None, gt=0)
     brand_id: int | None = Field(default=None, gt=0)
+    supplier: str | None = Field(
+        default=None,
+        max_length=150,
+    )
     sku: str | None = Field(
         default=None,
         min_length=2,
@@ -103,6 +111,7 @@ class ProductResponse(BaseModel):
     id: int
     category_id: int
     brand_id: int | None
+    supplier: str | None
     sku: str
     barcode: str | None
     name: str

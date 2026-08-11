@@ -39,6 +39,7 @@ def test_list_published_products(client, engine):
 
         product = Product(
             category_id=category.id,
+            supplier="Test Tedarikçi",
             sku="TEST-TEL-001",
             name="Test Telefon",
             slug="test-telefon",
@@ -63,6 +64,9 @@ def test_list_published_products(client, engine):
     assert body["data"]["total"] == 1
     assert body["data"]["items"][0]["sku"] == "TEST-TEL-001"
     assert body["data"]["items"][0]["status"] == "published"
+    assert body["data"]["items"][0]["supplier"] == (
+        "Test Tedarikçi"
+    )
 
 def test_filter_and_sort_products(client, engine):
     with Session(engine) as session:
