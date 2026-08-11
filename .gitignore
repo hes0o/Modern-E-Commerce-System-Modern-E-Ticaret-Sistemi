@@ -42,5 +42,5 @@ uploads/
 htmlcov/
 .pytest_cache/
 
-# Uploaded user files
-uploads/
+# Node.js
+node_modules/
