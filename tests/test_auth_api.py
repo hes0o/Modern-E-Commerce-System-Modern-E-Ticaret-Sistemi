@@ -291,10 +291,17 @@ def test_password_reset_flow(
     )
 
     assert forgot_response.status_code == 200
-    assert len(sent_messages) == 1
+
+    reset_messages = [
+        message
+        for message in sent_messages
+        if message["subject"]
+        == "Şifre Sıfırlama Talebi"
+    ]
+    assert len(reset_messages) == 1
 
     reset_token = (
-        sent_messages[0]["body"]
+        reset_messages[0]["body"]
         .split("?token=", 1)[1]
         .splitlines()[0]
     )
@@ -354,4 +361,129 @@ def test_password_reset_flow(
         },
     )
     assert unknown_response.status_code == 200
-    assert len(sent_messages) == 1
+    assert len(reset_messages) == 1
+
+def test_email_verification_flow(
+    client,
+    monkeypatch,
+):
+    sent_messages = []
+
+    def fake_send_email(**kwargs):
+        sent_messages.append(kwargs)
+        return True
+
+    monkeypatch.setattr(
+        "app.services.auth_service.send_email",
+        fake_send_email,
+    )
+
+    register_response = client.post(
+        "/api/auth/register",
+        json={
+            "name": "E-posta Doğrulama Testi",
+            "email": "verify.test@example.com",
+            "phone": None,
+            "password": "Test1234!",
+            "password_confirm": "Test1234!",
+            "kvkk_accepted": True,
+            "newsletter_allowed": False,
+        },
+    )
+
+    assert register_response.status_code == 201
+    assert (
+        register_response.json()["data"][
+            "email_verified"
+        ]
+        is False
+    )
+
+    verification_messages = [
+        message
+        for message in sent_messages
+        if message["subject"]
+        == "E-posta Adresinizi Doğrulayın"
+    ]
+    old_token = (
+        verification_messages[0]["body"]
+        .split("?token=", 1)[1]
+        .splitlines()[0]
+    )
+
+    login_response = client.post(
+        "/api/auth/login",
+        json={
+            "email": "verify.test@example.com",
+            "password": "Test1234!",
+        },
+    )
+    access_token = login_response.json()["data"][
+        "access_token"
+    ]
+    headers = {
+        "Authorization": f"Bearer {access_token}",
+    }
+
+    update_response = client.patch(
+        "/api/auth/me",
+        headers=headers,
+        json={
+            "email": "verify.changed@example.com",
+        },
+    )
+
+    assert update_response.status_code == 200
+    assert (
+        update_response.json()["data"][
+            "email_verified"
+        ]
+        is False
+    )
+
+    changed_messages = [
+        message
+        for message in sent_messages
+        if (
+            message["subject"]
+            == "E-posta Adresinizi Doğrulayın"
+            and message["recipient"]
+            == "verify.changed@example.com"
+        )
+    ]
+    new_token = (
+        changed_messages[0]["body"]
+        .split("?token=", 1)[1]
+        .splitlines()[0]
+    )
+
+    old_token_response = client.post(
+        "/api/auth/email/verify",
+        json={
+            "token": old_token,
+        },
+    )
+    assert old_token_response.status_code == 401
+
+    verify_response = client.post(
+        "/api/auth/email/verify",
+        json={
+            "token": new_token,
+        },
+    )
+    assert verify_response.status_code == 200
+
+    me_response = client.get(
+        "/api/auth/me",
+        headers=headers,
+    )
+    assert (
+        me_response.json()["data"]["email_verified"]
+        is True
+    )
+
+    resend_response = client.post(
+        "/api/auth/email/resend",
+        headers=headers,
+    )
+    assert resend_response.status_code == 422

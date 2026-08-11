@@ -8,6 +8,7 @@ from app.core.dependencies import get_current_user
 from app.database import get_session
 from app.models.user import User
 from app.schemas.auth import (
+    EmailVerificationConfirm,
     PasswordChange,
     PasswordResetConfirm,
     PasswordResetRequest,
@@ -22,9 +23,11 @@ from app.services.auth_service import (
     change_user_password,
     login_user,
     register_user,
+    request_email_verification,
     request_password_reset,
     reset_user_password,
     update_user_profile,
+    verify_user_email,
 )
 
 router = APIRouter(
@@ -41,6 +44,9 @@ def create_user_response(user: User) -> UserResponse:
         role=user.role.name,
         is_active=user.is_active,
         newsletter_allowed=user.newsletter_allowed,
+        email_verified=(
+            user.email_verified_at is not None
+        ),
         created_at=user.created_at,
     )
 
@@ -146,6 +152,60 @@ def confirm_password_reset(
         success=True,
         data=None,
         message="Şifre başarıyla sıfırlandı.",
+    )
+
+@router.post(
+    "/email/verify",
+    response_model=ApiResponse[None],
+)
+def confirm_email_verification(
+    request: Request,
+    payload: EmailVerificationConfirm,
+    session: Annotated[Session, Depends(get_session)],
+) -> ApiResponse[None]:
+    verify_user_email(
+        session,
+        payload,
+        ip_address=(
+            request.client.host
+            if request.client is not None
+            else None
+        ),
+    )
+
+    return ApiResponse(
+        success=True,
+        data=None,
+        message="E-posta adresi başarıyla doğrulandı.",
+    )
+
+
+@router.post(
+    "/email/resend",
+    response_model=ApiResponse[None],
+)
+def resend_email_verification(
+    request: Request,
+    current_user: Annotated[
+        User,
+        Depends(get_current_user),
+    ],
+    session: Annotated[Session, Depends(get_session)],
+) -> ApiResponse[None]:
+    request_email_verification(
+        session,
+        current_user,
+        ip_address=(
+            request.client.host
+            if request.client is not None
+            else None
+        ),
+    )
+
+    return ApiResponse(
+        success=True,
+        data=None,
+        message="Doğrulama e-postası yeniden gönderildi.",
     )
 
 @router.get(

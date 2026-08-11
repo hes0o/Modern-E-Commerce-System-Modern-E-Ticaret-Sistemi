@@ -14,6 +14,14 @@ VITE_API_BASE_URL=http://localhost:8000/api
 VITE_USE_MOCK=false
 ```
 
+E-posta doğrulama bağlantısı ayarları backend `.env` dosyasında tutulur:
+
+```env
+EMAIL_VERIFICATION_EXPIRE_MINUTES=1440
+EMAIL_VERIFICATION_URL=http://localhost:5173/verify-email
+```
+
+
 Backend’i çalıştırma:
 
 ```powershell
@@ -100,6 +108,9 @@ Rol değerleri:
 | PATCH | `/api/auth/me/password` | Şifre değiştir |
 | POST | `/api/auth/password/forgot` | Şifre sıfırlama bağlantısı iste |
 | POST | `/api/auth/password/reset` | Token ile yeni şifre belirle |
+| POST | `/api/auth/email/verify` | Token ile e-posta adresini doğrula |
+| POST | `/api/auth/email/resend` | Doğrulama e-postasını yeniden gönder |
+
 Kayıt body:
 
 ```json
@@ -146,6 +157,16 @@ Profil güncelleme alanları:
 ```
 
 Frontend sıfırlama sayfası token değerini URL’deki `?token=` parametresinden almalıdır.
+
+E-posta doğrulama body:
+
+```json
+{
+  "token": "e-posta-bağlantısındaki-token"
+}
+```
+
+`/api/auth/email/resend` endpoint’i Bearer token gerektirir. Kullanıcı yanıtlarındaki `email_verified` alanı doğrulama durumunu gösterir. Kullanıcı e-posta adresini değiştirirse bu alan tekrar `false` olur ve yeni doğrulama e-postası gönderilir.
 
 ## 5. Katalog Endpoint’leri
 

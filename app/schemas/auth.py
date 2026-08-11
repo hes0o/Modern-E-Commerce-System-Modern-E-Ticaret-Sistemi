@@ -62,6 +62,7 @@ class UserResponse(BaseModel):
     role: str
     is_active: bool
     newsletter_allowed: bool
+    email_verified: bool
     created_at: datetime
 
 
@@ -145,3 +146,9 @@ class PasswordResetConfirm(BaseModel):
             )
 
         return self
+
+class EmailVerificationConfirm(BaseModel):
+    token: str = Field(
+        min_length=20,
+        max_length=2000,
+    )

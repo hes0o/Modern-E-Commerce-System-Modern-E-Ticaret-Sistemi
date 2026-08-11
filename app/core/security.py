@@ -118,3 +118,56 @@ def decode_password_reset_token(
         )
 
     return payload
+
+def get_email_fingerprint(
+    email: str,
+) -> str:
+    return hashlib.sha256(
+        email.strip().lower().encode("utf-8")
+    ).hexdigest()
+
+
+def create_email_verification_token(
+    subject: str | int,
+    *,
+    email: str,
+) -> str:
+    now = datetime.now(UTC)
+    expires_at = now + timedelta(
+        minutes=(
+            settings.email_verification_expire_minutes
+        )
+    )
+
+    payload: dict[str, Any] = {
+        "sub": str(subject),
+        "iat": now,
+        "exp": expires_at,
+        "type": "email_verification",
+        "email_version": get_email_fingerprint(
+            email
+        ),
+    }
+
+    return jwt.encode(
+        payload,
+        settings.secret_key,
+        algorithm=settings.jwt_algorithm,
+    )
+
+
+def decode_email_verification_token(
+    token: str,
+) -> dict[str, Any]:
+    payload = jwt.decode(
+        token,
+        settings.secret_key,
+        algorithms=[settings.jwt_algorithm],
+    )
+
+    if payload.get("type") != "email_verification":
+        raise jwt.InvalidTokenError(
+            "Invalid email verification token type."
+        )
+
+    return payload

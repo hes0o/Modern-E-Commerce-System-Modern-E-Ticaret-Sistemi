@@ -15,8 +15,11 @@ from app.core.exceptions import (
 )
 from app.core.security import (
     create_access_token,
+    create_email_verification_token,
     create_password_reset_token,
+    decode_email_verification_token,
     decode_password_reset_token,
+    get_email_fingerprint,
     get_password_hash_fingerprint,
     hash_password,
     verify_password,
@@ -28,6 +31,7 @@ from app.repositories.user_repository import (
     get_user_by_email,
 )
 from app.schemas.auth import (
+    EmailVerificationConfirm,
     PasswordChange,
     PasswordResetConfirm,
     PasswordResetRequest,
@@ -99,6 +103,10 @@ def register_user(
             ),
             related_entity_type="user",
             related_entity_id=created_user.id,
+        )
+        send_user_verification_email(
+            session,
+            created_user,
         )
         session.commit()
         session.refresh(created_user)
@@ -267,6 +275,7 @@ def update_user_profile(
     payload: UserProfileUpdate,
 ) -> User:
     update_data = payload.model_dump(exclude_unset=True)
+    email_changed = False
 
     if "email" in update_data:
         normalized_email = str(
@@ -284,7 +293,7 @@ def update_user_profile(
             raise ConflictError(
                 "Bu e-posta adresi zaten kullanılıyor."
             )
-
+        email_changed = normalized_email != user.email
         update_data["email"] = normalized_email
 
     if "name" in update_data:
@@ -292,7 +301,8 @@ def update_user_profile(
 
     for field, value in update_data.items():
         setattr(user, field, value)
-
+    if email_changed:
+        user.email_verified_at = None
     user.updated_at = datetime.now(UTC)
 
     try:
@@ -305,7 +315,12 @@ def update_user_profile(
         raise ConflictError(
             "Profil bilgileri güncellenemedi."
         ) from error
-
+    if email_changed:
+        send_user_verification_email(
+            session,
+            user,
+        )
+        session.commit()
     return user
 
 
@@ -466,6 +481,148 @@ def reset_user_password(
         entity_id=user.id,
         new_value={
             "password_changed": True,
+        },
+        ip_address=ip_address,
+    )
+
+    session.commit()
+    session.refresh(user)
+
+def send_user_verification_email(
+    session: Session,
+    user: User,
+    *,
+    ip_address: str | None = None,
+) -> bool:
+    if user.id is None:
+        return False
+
+    token = create_email_verification_token(
+        user.id,
+        email=user.email,
+    )
+    verification_url = (
+        f"{settings.email_verification_url}"
+        f"?token={token}"
+    )
+
+    sent = send_email(
+        recipient=user.email,
+        subject="E-posta Adresinizi Doğrulayın",
+        body=(
+            f"Merhaba {user.name},\n\n"
+            "E-posta adresinizi doğrulamak için "
+            "aşağıdaki bağlantıyı kullanın:\n\n"
+            f"{verification_url}\n\n"
+            "Bu bağlantı "
+            f"{settings.email_verification_expire_minutes} "
+            "dakika geçerlidir."
+        ),
+    )
+
+    log_action(
+        session,
+        user_id=user.id,
+        action="auth.email_verification_requested",
+        entity_type="users",
+        entity_id=user.id,
+        new_value={
+            "delivery_succeeded": sent,
+        },
+        ip_address=ip_address,
+    )
+
+    return sent
+
+
+def request_email_verification(
+    session: Session,
+    user: User,
+    *,
+    ip_address: str | None = None,
+) -> None:
+    if user.email_verified_at is not None:
+        raise BusinessRuleError(
+            "E-posta adresi zaten doğrulanmış."
+        )
+
+    send_user_verification_email(
+        session,
+        user,
+        ip_address=ip_address,
+    )
+    session.commit()
+
+
+def verify_user_email(
+    session: Session,
+    payload: EmailVerificationConfirm,
+    *,
+    ip_address: str | None = None,
+) -> None:
+    try:
+        token_payload = (
+            decode_email_verification_token(
+                payload.token
+            )
+        )
+        user_id = int(token_payload["sub"])
+    except (
+        jwt.InvalidTokenError,
+        KeyError,
+        TypeError,
+        ValueError,
+    ) as error:
+        raise AuthenticationError(
+            "E-posta doğrulama bağlantısı geçersiz "
+            "veya süresi dolmuş."
+        ) from error
+
+    user = session.get(User, user_id)
+
+    if (
+        user is None
+        or not user.is_active
+        or user.id is None
+    ):
+        raise AuthenticationError(
+            "E-posta doğrulama bağlantısı geçersiz "
+            "veya süresi dolmuş."
+        )
+
+    token_email_version = str(
+        token_payload.get(
+            "email_version",
+            "",
+        )
+    )
+    current_email_version = get_email_fingerprint(
+        user.email
+    )
+
+    if not hmac.compare_digest(
+        token_email_version,
+        current_email_version,
+    ):
+        raise AuthenticationError(
+            "E-posta doğrulama bağlantısı geçersiz "
+            "veya e-posta adresi değiştirilmiş."
+        )
+
+    if user.email_verified_at is not None:
+        return
+
+    user.email_verified_at = datetime.now(UTC)
+    session.add(user)
+
+    log_action(
+        session,
+        user_id=user.id,
+        action="auth.email_verified",
+        entity_type="users",
+        entity_id=user.id,
+        new_value={
+            "email_verified": True,
         },
         ip_address=ip_address,
     )

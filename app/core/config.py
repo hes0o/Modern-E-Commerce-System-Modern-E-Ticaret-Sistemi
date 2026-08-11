@@ -48,6 +48,17 @@ class Settings:
         "http://localhost:5173/reset-password",
     )
 
+    email_verification_expire_minutes: int = int(
+        os.getenv(
+            "EMAIL_VERIFICATION_EXPIRE_MINUTES",
+            "1440",
+        )
+    )
+    email_verification_url: str = os.getenv(
+        "EMAIL_VERIFICATION_URL",
+        "http://localhost:5173/verify-email",
+    )
+
     login_max_failed_attempts: int = int(
         os.getenv(
             "LOGIN_MAX_FAILED_ATTEMPTS",
