@@ -4,8 +4,8 @@ import { useAuth } from '@/hooks/useAuth'
 import { ShoppingCart, Lock, Mail, ArrowRight } from 'lucide-react'
 
 export default function LoginPage() {
-  const [email, setEmail] = useState('admin@example.com')
-  const [password, setPassword] = useState('admin123')
+  const [email, setEmail] = useState('')
+  const [password, setPassword] = useState('')
   const [err, setErr] = useState('')
   const { login, loading } = useAuth()
   const navigate = useNavigate()
@@ -41,7 +41,7 @@ export default function LoginPage() {
           </div>
         )}
 
-        <form onSubmit={handleSubmit} className="space-y-4">
+        <form onSubmit={handleSubmit} className="space-y-4" autoComplete="off">
           <div>
             <label className="label">E-posta Adresi</label>
             <div className="relative flex items-center">
@@ -52,7 +52,8 @@ export default function LoginPage() {
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
                 className="input pl-9"
-                placeholder="admin@example.com"
+                placeholder="E-posta adresinizi girin"
+                autoComplete="off"
               />
             </div>
           </div>
@@ -68,6 +69,7 @@ export default function LoginPage() {
                 onChange={(e) => setPassword(e.target.value)}
                 className="input pl-9"
                 placeholder="••••••••"
+                autoComplete="new-password"
               />
             </div>
           </div>
@@ -81,12 +83,6 @@ export default function LoginPage() {
             <ArrowRight size={16} />
           </button>
         </form>
-
-        <div className="border-t border-slate-100 pt-4 text-xs text-slate-500 space-y-1">
-          <p className="font-semibold text-slate-700">Demo Giriş Bilgileri:</p>
-          <p>Yönetici: admin@example.com / admin123</p>
-          <p>Personel: employee@example.com / emp123</p>
-        </div>
       </div>
     </div>
   )
