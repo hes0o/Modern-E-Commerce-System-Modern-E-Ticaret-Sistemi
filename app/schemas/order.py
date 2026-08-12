@@ -1,6 +1,13 @@
 from datetime import datetime
 
-from pydantic import BaseModel, ConfigDict, EmailStr, Field, model_validator
+from pydantic import (
+    AliasPath,
+    BaseModel,
+    ConfigDict,
+    EmailStr,
+    Field,
+    model_validator,
+)
 
 from app.models.enums import OrderStatus, PaymentMethod
 
@@ -66,6 +73,18 @@ class OrderResponse(BaseModel):
     id: int
     order_number: str
     user_id: int | None
+    user_name: str | None = Field(
+        default=None,
+        validation_alias=AliasPath("user", "name"),
+    )
+    user_email: str | None = Field(
+        default=None,
+        validation_alias=AliasPath("user", "email"),
+    )
+    user_phone: str | None = Field(
+        default=None,
+        validation_alias=AliasPath("user", "phone"),
+    )
     guest_name: str | None
     guest_email: str | None
     guest_phone: str | None

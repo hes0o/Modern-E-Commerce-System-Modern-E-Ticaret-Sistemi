@@ -14,6 +14,7 @@ def get_order_by_id(
         select(Order)
         .where(Order.id == order_id)
         .options(
+            selectinload(Order.user),
             selectinload(Order.items),
             selectinload(Order.status_history),
         )
@@ -29,6 +30,7 @@ def get_order_by_number(
         select(Order)
         .where(Order.order_number == order_number)
         .options(
+            selectinload(Order.user),
             selectinload(Order.items),
             selectinload(Order.status_history),
         )
@@ -49,6 +51,7 @@ def get_user_orders(
         select(Order)
         .where(condition)
         .options(
+            selectinload(Order.user),
             selectinload(Order.items),
             selectinload(Order.status_history),
         )
@@ -76,6 +79,7 @@ def get_all_orders(
     order_status: OrderStatus | None = None,
 ) -> tuple[list[Order], int]:
     statement = select(Order).options(
+        selectinload(Order.user),
         selectinload(Order.items),
         selectinload(Order.status_history),
     )

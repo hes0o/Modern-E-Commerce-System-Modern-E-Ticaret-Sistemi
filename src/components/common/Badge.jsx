@@ -24,6 +24,9 @@ const STATUS_LABEL_MAP = {
   published: { color: 'green', label: 'Yayında' },
   archived: { color: 'slate', label: 'Arşivlendi' },
   low_stock: { color: 'yellow', label: 'Kritik Stok' },
+  confirmed: { color: 'blue', label: 'Onaylandı' },
+  preparing: { color: 'blue', label: 'Hazırlanıyor' },
+  completed: { color: 'green', label: 'Tamamlandı' },
 }
 
 export default function Badge({ status, color, label, dot = true, className }) {
