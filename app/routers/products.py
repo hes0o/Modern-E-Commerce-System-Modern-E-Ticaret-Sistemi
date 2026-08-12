@@ -50,6 +50,10 @@ def get_product_list(
         Optional[int],
         Query(gt=0),
     ] = None,
+    status: Annotated[
+        Optional[str],
+        Query(),
+    ] = None,
 ) -> ApiResponse[ProductListResponse]:
     result = list_products(
         session,
@@ -57,6 +61,7 @@ def get_product_list(
         page_size=page_size,
         search=search,
         category_id=category_id,
+        status=status,
     )
 
     return ApiResponse(
@@ -77,7 +82,7 @@ def get_product_detail(
     product = get_product(
         session,
         product_id,
-        published_only=True,
+        published_only=False,
     )
 
     return ApiResponse(

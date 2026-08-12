@@ -1,16 +1,47 @@
-import { useState } from 'react'
-import { Store, Bell, Globe, Save } from 'lucide-react'
+import { useState, useEffect } from 'react'
+import { Store, Bell, Save } from 'lucide-react'
+import api from '@/services/api'
 
 export default function SettingsPage() {
   const [storeName, setStoreName] = useState('E-Ticaret Yönetim Paneli')
   const [currency, setCurrency] = useState('TRY')
   const [emailAlerts, setEmailAlerts] = useState(true)
   const [saved, setSaved] = useState(false)
+  const [loading, setLoading] = useState(false)
 
-  const handleSave = (e) => {
+  useEffect(() => {
+    async function loadSettings() {
+      try {
+        const res = await api.get('/api/admin/settings')
+        const items = res.data.data || []
+        items.forEach((s) => {
+          if (s.key === 'store_name') setStoreName(s.value)
+          if (s.key === 'currency') setCurrency(s.value)
+          if (s.key === 'email_alerts') setEmailAlerts(s.value === 'true')
+        })
+      } catch (err) {
+        console.error('Settings load error:', err)
+      }
+    }
+    loadSettings()
+  }, [])
+
+  const handleSave = async (e) => {
     e.preventDefault()
-    setSaved(true)
-    setTimeout(() => setSaved(false), 2500)
+    setLoading(true)
+    try {
+      await Promise.allSettled([
+        api.post('/api/admin/settings', { key: 'store_name', value: storeName, setting_group: 'general' }),
+        api.post('/api/admin/settings', { key: 'currency', value: currency, setting_group: 'general' }),
+        api.post('/api/admin/settings', { key: 'email_alerts', value: String(emailAlerts), setting_group: 'notifications' }),
+      ])
+      setSaved(true)
+      setTimeout(() => setSaved(false), 2500)
+    } catch (err) {
+      console.error('Settings save error:', err)
+    } finally {
+      setLoading(false)
+    }
   }
 
   return (

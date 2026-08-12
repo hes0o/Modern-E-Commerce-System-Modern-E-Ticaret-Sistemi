@@ -54,13 +54,11 @@ export default function CategoriesPage() {
         await api.put(`/api/categories/${editingItem.id}`, {
           name,
           slug: slugify(name),
-          description,
         })
       } else {
         await api.post('/api/categories', {
           name,
           slug: slugify(name),
-          description,
         })
       }
       setIsModalOpen(false)

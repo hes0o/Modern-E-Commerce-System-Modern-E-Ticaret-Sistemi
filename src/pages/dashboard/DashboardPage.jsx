@@ -1,7 +1,6 @@
 import { useEffect, useState } from 'react'
 import StatCard from '@/components/common/StatCard'
 import SalesChart from '@/components/charts/SalesChart'
-import DonutChart from '@/components/charts/DonutChart'
 import Badge from '@/components/common/Badge'
 import { ShoppingBag, DollarSign, Users, AlertTriangle, ArrowRight, Plus, Package, Download } from 'lucide-react'
 import { orderService } from '@/services/orderService'
@@ -32,7 +31,7 @@ export default function DashboardPage() {
   { value: '1M', label: '1 Ay' },
   { value: '1Y', label: '1 Yıl' },
   { value: '2Y', label: '2 Yıl' },
-]
+  ]
 
   useEffect(() => {
     async function loadDashboard() {
@@ -44,11 +43,11 @@ export default function DashboardPage() {
         const recent = await orderService.getAll({ page: 1, limit: 5 })
 
         setStats({
-          dailyOrders: orderStats.todayOrders,
-          monthlySales: orderStats.monthlyRevenue,
-          totalSales: orderStats.totalRevenue,
-          totalCustomers: userStats.byRole.Customer,
-          lowStock: stockStats.lowStock + stockStats.outOfStock,
+          dailyOrders: orderStats.todayOrders || 0,
+          monthlySales: orderStats.monthlyRevenue || 0,
+          totalSales: orderStats.totalRevenue || 0,
+          totalCustomers: userStats.total || 0,
+          lowStock: (stockStats.lowStock || 0) + (stockStats.outOfStock || 0),
         })
         setSalesData(salesChart)
         setLatestOrders(recent.items)
@@ -73,13 +72,13 @@ export default function DashboardPage() {
         <div className="flex items-center gap-3">
 
           <Link to="/products/new" className="btn btn-primary">
-          <Plus size={15} />
+            <Plus size={15} />
             Yeni Ürün Ekle
           </Link>
 
           <Link to="/reports" className="btn btn-secondary">
-          <Download size={15} />
-           Rapor Al
+            <Download size={15} />
+            Rapor Al
           </Link>
 
         </div>
@@ -133,40 +132,28 @@ export default function DashboardPage() {
               <h3 className="text-sm font-bold text-slate-900">
                 Gelir Performansı</h3>
               <p className="text-xs text-slate-400">
-              Aylık bazda gerçekleşen satış hacmi
-            </p>
-          </div>
-          <select
-            value={period}
-            onChange={(e) => setPeriod(e.target.value)}
-            className="select w-36">
+                Aylık bazda gerçekleşen satış hacmi
+              </p>
+            </div>
+            <select
+              value={period}
+              onChange={(e) => setPeriod(e.target.value)}
+              className="select w-36">
               {PERIODS.map(item => (
                 <option key={item.value} value={item.value}>
                   {item.label}
-                  </option>
-                ))}
-                </select>
-              </div>
-              {loading ? (
-                <div className="h-72 skeleton rounded-xl" />
-              ) : (
-              <SalesChart data={salesData} />
-              )}
-        </div>
-        <TopProducts />
-        <div className="card p-5 space-y-4">
-          <div className="flex items-center justify-between border-b border-slate-100 pb-3">
-            <div>
-              <h3 className="text-sm font-bold text-slate-900 tracking-tight">Kategori Dağılımı</h3>
-              <p className="text-[11px] text-slate-400">En çok satan ürün kategorileri</p>
-            </div>
+                </option>
+              ))}
+            </select>
           </div>
           {loading ? (
             <div className="h-72 skeleton rounded-xl" />
           ) : (
-            <DonutChart />
+            <SalesChart data={salesData} />
           )}
         </div>
+        <TopProducts />
+
       </div>
 
       {/* Latest Orders Table */}

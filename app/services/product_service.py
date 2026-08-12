@@ -148,14 +148,22 @@ def list_products(
     page_size: int,
     search: Optional[str],
     category_id: Optional[int],
+    status: Optional[str] = None,
 ) -> ProductListResponse:
+    enum_status = None
+    if status:
+        try:
+            enum_status = ProductStatus(status)
+        except ValueError:
+            pass
+
     products, total = get_products(
         session,
         page=page,
         page_size=page_size,
         search=search,
         category_id=category_id,
-        status=ProductStatus.PUBLISHED,
+        status=enum_status,
     )
 
     total_pages = (

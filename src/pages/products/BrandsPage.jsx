@@ -53,14 +53,10 @@ export default function BrandsPage() {
       if (editingItem) {
         await api.patch(`/api/brands/${editingItem.id}`, {
           name,
-          slug: slugify(name),
-          website,
         })
       } else {
         await api.post('/api/brands', {
           name,
-          slug: slugify(name),
-          website,
         })
       }
       setIsModalOpen(false)

@@ -2,6 +2,7 @@ import { useState } from 'react'
 import SalesChart from '@/components/charts/SalesChart'
 import DonutChart from '@/components/charts/DonutChart'
 import { Download, Calendar, ChevronDown } from 'lucide-react'
+import api from '@/services/api'
 
 export default function ReportsPage() {
   const [dateRange, setDateRange] = useState('30days')
@@ -13,6 +14,33 @@ export default function ReportsPage() {
     { value: "90days", label: "Son 90 Gün" },
     { value: "1year", label: "Bu Yıl" }
   ]
+
+  const handleExportCSV = async () => {
+    try {
+      const today = new Date()
+      const dateTo = today.toISOString().split('T')[0]
+      const past = new Date()
+      if (dateRange === '7days') past.setDate(today.getDate() - 7)
+      else if (dateRange === '30days') past.setDate(today.getDate() - 30)
+      else if (dateRange === '90days') past.setDate(today.getDate() - 90)
+      else past.setFullYear(today.getFullYear() - 1)
+      const dateFrom = past.toISOString().split('T')[0]
+
+      const response = await api.get('/api/admin/reports/sales/export.csv', {
+        params: { date_from: dateFrom, date_to: dateTo },
+        responseType: 'blob',
+      })
+      const blob = new Blob([response.data], { type: 'text/csv;charset=utf-8;' })
+      const url = window.URL.createObjectURL(blob)
+      const a = document.createElement('a')
+      a.href = url
+      a.download = `satis-raporu-${dateFrom}-${dateTo}.csv`
+      a.click()
+      window.URL.revokeObjectURL(url)
+    } catch (err) {
+      console.error('CSV Export Error:', err)
+    }
+  }
 
   return (
     <div className="space-y-6">
@@ -92,7 +120,7 @@ export default function ReportsPage() {
 
 
           {/* CSV Button */}
-          <button className="btn btn-secondary btn-sm flex items-center gap-2">
+          <button onClick={handleExportCSV} className="btn btn-secondary btn-sm flex items-center gap-2">
             <Download size={14} />
             CSV İndir
           </button>

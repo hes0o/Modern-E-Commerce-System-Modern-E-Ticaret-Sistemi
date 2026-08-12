@@ -1,8 +1,9 @@
-from typing import Optional, Union, Any
+from typing import Optional, Union
 from datetime import datetime
 from typing import Literal
 
 from pydantic import BaseModel, ConfigDict, Field
+
 
 StockOperation = Literal[
     "in",
@@ -37,6 +38,36 @@ class StockMovementResponse(BaseModel):
 
 class StockMovementListResponse(BaseModel):
     items: list[StockMovementResponse]
+    total: int
+    page: int
+    page_size: int
+    total_pages: int
+
+
+# ---------------------------------------------------------
+# STOK YÖNETİMİ LİSTELEME
+# ---------------------------------------------------------
+
+class StockItemResponse(BaseModel):
+    id: int
+    product_id: int
+    variant_id: Optional[int] = None
+
+    product_name: str
+    sku: str
+
+    category: Optional[str] = None
+
+    current_stock: int
+    min_stock: Optional[int] = None
+
+    has_variants: bool = False
+
+    model_config = ConfigDict(from_attributes=True)
+
+
+class StockItemListResponse(BaseModel):
+    items: list[StockItemResponse]
     total: int
     page: int
     page_size: int

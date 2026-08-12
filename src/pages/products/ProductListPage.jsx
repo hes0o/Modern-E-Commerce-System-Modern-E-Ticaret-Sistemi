@@ -65,8 +65,16 @@ export default function ProductListPage() {
         </div>
       ),
     },
-    { header: 'Kategori', accessor: 'category' },
-    { header: 'Marka', accessor: 'brand' },
+    {
+      header: 'Kategori',
+      accessor: 'category_id',
+      render: (row) => row.category?.name || row.category_id || '-'
+    },
+    {
+      header: 'Marka',
+      accessor: 'brand_id',
+      render: (row) => row.brand?.name || row.brand_id || '-'
+    },
     {
       header: 'Fiyat',
       accessor: 'price',
