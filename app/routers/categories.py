@@ -14,7 +14,7 @@ from app.schemas.category import (
 from app.schemas.common import ApiResponse
 from app.services.category_service import (
     create_new_category,
-    deactivate_category,
+    delete_category_permanently,
     get_category,
     list_categories,
     update_existing_category,
@@ -46,7 +46,7 @@ def get_category_list(
 
     return ApiResponse(
         success=True,
-        data=[create_category_response(category) for category in categories],
+        data=categories,
         message="Kategoriler getirildi.",
     )
 
@@ -131,7 +131,7 @@ def delete_category(
         Depends(require_permission("category.delete")),
     ],
 ) -> ApiResponse[CategoryResponse]:
-    category = deactivate_category(
+    category = delete_category_permanently(
         session,
         category_id,
     )
@@ -139,5 +139,5 @@ def delete_category(
     return ApiResponse(
         success=True,
         data=create_category_response(category),
-        message="Kategori pasif duruma getirildi.",
+        message="Kategori başarıyla silindi.",
     )

@@ -56,3 +56,26 @@ def delete_setting(
 ) -> None:
     session.delete(setting)
     session.commit()
+
+
+def upsert_setting_by_key(
+    session: Session,
+    key: str,
+    value: Optional[str],
+    group: Optional[str] = None,
+) -> Setting:
+    """Key varsa güncelle, yoksa oluştur."""
+    existing = get_setting_by_key(session, key)
+    if existing is not None:
+        existing.value = value
+        if group is not None:
+            existing.group = group
+        session.add(existing)
+        session.commit()
+        session.refresh(existing)
+        return existing
+    new_setting = Setting(key=key, value=value, group=group)
+    session.add(new_setting)
+    session.commit()
+    session.refresh(new_setting)
+    return new_setting

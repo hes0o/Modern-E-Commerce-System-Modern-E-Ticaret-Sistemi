@@ -14,13 +14,15 @@ const COLOR_MAP = {
 const STATUS_LABEL_MAP = {
   active: { color: 'green', label: 'Aktif' },
   inactive: { color: 'slate', label: 'Pasif' },
+  published: { color: 'green', label: 'Aktif' },
+  draft: { color: 'yellow', label: 'Taslak' },
+  archived: { color: 'slate', label: 'Arşivlendi' },
   pending: { color: 'yellow', label: 'Beklemede' },
   processing: { color: 'blue', label: 'Hazırlanıyor' },
   shipped: { color: 'purple', label: 'Kargoda' },
   delivered: { color: 'green', label: 'Teslim Edildi' },
   cancelled: { color: 'red', label: 'İptal Edildi' },
   out_of_stock: { color: 'red', label: 'Stokta Yok' },
-  draft: { color: 'slate', label: 'Taslak' },
   low_stock: { color: 'yellow', label: 'Kritik Stok' },
 }
 

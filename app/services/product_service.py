@@ -1,5 +1,5 @@
 from typing import Optional, Union, Any
-from sqlmodel import Session
+from sqlmodel import Session, select
 
 from app.core.exceptions import (
     BusinessRuleError,
@@ -8,7 +8,7 @@ from app.core.exceptions import (
 )
 from app.models.brand import Brand
 from app.models.enums import ProductStatus
-from app.models.product import Product
+from app.models.product import Product, ProductVariant
 from app.repositories.category_repository import (
     get_category_by_id,
 )
@@ -52,6 +52,7 @@ def validate_category(
 def validate_brand(
     session: Session,
     brand_id: Optional[int],
+    category_id: int,
 ) -> None:
     if brand_id is None:
         return
@@ -64,6 +65,11 @@ def validate_brand(
     if not brand.is_active:
         raise BusinessRuleError(
             "Pasif bir marka ürüne atanamaz."
+        )
+
+    if brand.category_id != category_id:
+        raise BusinessRuleError(
+            "Seçilen marka, seçilen kategoriye ait değil."
         )
 
 
@@ -172,11 +178,15 @@ def list_products(
         else 0
     )
 
+    items = []
+    for product in products:
+        prod_dict = product.model_dump()
+        if product.has_variants:
+            prod_dict["stock"] = sum(v.stock for v in product.variants if v.stock is not None)
+        items.append(ProductResponse.model_validate(prod_dict))
+
     return ProductListResponse(
-        items=[
-            ProductResponse.model_validate(product)
-            for product in products
-        ],
+        items=items,
         total=total,
         page=page,
         page_size=page_size,
@@ -214,14 +224,11 @@ def create_new_product(
     validate_brand(
         session,
         product_data.brand_id,
+        product_data.category_id,
     )
     validate_price_rules(
         product_data.price,
         product_data.discount_price,
-    )
-    validate_stock_rules(
-        has_variants=product_data.has_variants,
-        stock=product_data.stock,
     )
 
     slug = create_slug(
@@ -275,7 +282,17 @@ def create_new_product(
         is_campaign=product_data.is_campaign,
     )
 
-    return save_new_product(session, product)
+    saved_product = save_new_product(session, product)
+    
+    if product_data.has_variants and product_data.variants:
+        for v_data in product_data.variants:
+            v_dict = v_data.model_dump()
+            v = ProductVariant(product_id=saved_product.id, **v_dict)
+            session.add(v)
+        session.commit()
+        session.refresh(saved_product)
+
+    return saved_product
 
 
 def update_existing_product(
@@ -288,16 +305,21 @@ def update_existing_product(
         exclude_unset=True,
     )
 
+    # Validate category and brand if either is updated
+    final_category_id = update_data.get("category_id", product.category_id)
+    final_brand_id = update_data.get("brand_id", product.brand_id)
+
     if "category_id" in update_data:
         validate_category(
             session,
-            update_data["category_id"],
+            final_category_id,
         )
 
-    if "brand_id" in update_data:
+    if "brand_id" in update_data or "category_id" in update_data:
         validate_brand(
             session,
-            update_data["brand_id"],
+            final_brand_id,
+            final_category_id,
         )
 
     if "slug" in update_data:
@@ -346,6 +368,9 @@ def update_existing_product(
         and "stock" not in update_data
     ):
         update_data["stock"] = None
+
+    # Remove variants from update_data so we handle it separately
+    variants_data = update_data.pop("variants", None)
 
     if (
         update_data.get("has_variants") is False
@@ -408,13 +433,67 @@ def update_existing_product(
     for field_name, value in update_data.items():
         setattr(product, field_name, value)
 
-    return save_product(session, product)
+    saved_product = save_product(session, product)
+
+    if variants_data is not None:
+        if not saved_product.has_variants:
+            # If changed to no variants, delete all existing variants
+            for v in saved_product.variants:
+                session.delete(v)
+        else:
+            # Sync variants
+            existing_variants = {v.id: v for v in saved_product.variants}
+            incoming_ids = [v["id"] for v in variants_data if v.get("id")]
+            
+            # Delete variants not in incoming list
+            for v_id, v in existing_variants.items():
+                if v_id not in incoming_ids:
+                    session.delete(v)
+            
+            for v_data in variants_data:
+                v_id = v_data.get("id")
+                if v_id and v_id in existing_variants:
+                    # Update
+                    v = existing_variants[v_id]
+                    for key, val in v_data.items():
+                        if key != "id":
+                            setattr(v, key, val)
+                else:
+                    # Create
+                    new_v_data = {k: v for k, v in v_data.items() if k != "id"}
+                    v = ProductVariant(product_id=saved_product.id, **new_v_data)
+                    session.add(v)
+        
+        session.commit()
+        session.refresh(saved_product)
+
+    return saved_product
 
 
-def archive_product(
+def delete_product_permanently(
     session: Session,
     product_id: int,
 ) -> Product:
+    from app.models.stock import StockMovement
+
     product = get_product(session, product_id)
-    product.status = ProductStatus.ARCHIVED
-    return save_product(session, product)
+
+    # Delete related stock movements
+    movements = session.exec(
+        select(StockMovement).where(StockMovement.product_id == product_id)
+    ).all()
+    for m in movements:
+        session.delete(m)
+
+    # Delete related images
+    for img in product.images:
+        session.delete(img)
+
+    # Delete related variants
+    for v in product.variants:
+        session.delete(v)
+
+    session.delete(product)
+    session.commit()
+
+    return product

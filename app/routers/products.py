@@ -12,14 +12,15 @@ from app.schemas.product import (
     ProductCreate,
     ProductListResponse,
     ProductResponse,
+    ProductDetailResponse,
     ProductUpdate,
 )
 from app.services.product_service import (
-    archive_product,
     create_new_product,
     get_product,
     list_products,
     update_existing_product,
+    delete_product_permanently,
 )
 
 router = APIRouter(
@@ -30,8 +31,22 @@ router = APIRouter(
 
 def create_product_response(
     product: object,
-) -> ProductResponse:
-    return ProductResponse.model_validate(product)
+    detail: bool = False,
+) -> Union[ProductResponse, ProductDetailResponse]:
+    prod_dict = product.model_dump()
+    if getattr(product, "has_variants", False):
+        variants = getattr(product, "variants", [])
+        prod_dict["stock"] = sum(v.stock for v in variants if getattr(v, "stock", None) is not None)
+    
+    if detail:
+        # Include variants for detail response
+        if getattr(product, "has_variants", False):
+            prod_dict["variants"] = [v.model_dump() for v in getattr(product, "variants", [])]
+        else:
+            prod_dict["variants"] = []
+        return ProductDetailResponse.model_validate(prod_dict)
+    
+    return ProductResponse.model_validate(prod_dict)
 
 
 @router.get(
@@ -73,12 +88,12 @@ def get_product_list(
 
 @router.get(
     "/{product_id}",
-    response_model=ApiResponse[ProductResponse],
+    response_model=ApiResponse[ProductDetailResponse],
 )
 def get_product_detail(
     product_id: int,
     session: Annotated[Session, Depends(get_session)],
-) -> ApiResponse[ProductResponse]:
+) -> ApiResponse[ProductDetailResponse]:
     product = get_product(
         session,
         product_id,
@@ -87,14 +102,14 @@ def get_product_detail(
 
     return ApiResponse(
         success=True,
-        data=create_product_response(product),
+        data=create_product_response(product, detail=True),
         message="Ürün getirildi.",
     )
 
 
 @router.post(
     "",
-    response_model=ApiResponse[ProductResponse],
+    response_model=ApiResponse[ProductDetailResponse],
     status_code=status.HTTP_201_CREATED,
 )
 def create_product(
@@ -104,7 +119,7 @@ def create_product(
     User,
     Depends(require_permission("product.create")),
     ],
-) -> ApiResponse[ProductResponse]:
+) -> ApiResponse[ProductDetailResponse]:
     product = create_new_product(
         session,
         product_data,
@@ -112,14 +127,14 @@ def create_product(
 
     return ApiResponse(
         success=True,
-        data=create_product_response(product),
+        data=create_product_response(product, detail=True),
         message="Ürün başarıyla oluşturuldu.",
     )
 
 
 @router.put(
     "/{product_id}",
-    response_model=ApiResponse[ProductResponse],
+    response_model=ApiResponse[ProductDetailResponse],
 )
 def update_product(
     product_id: int,
@@ -129,7 +144,7 @@ def update_product(
     User,
     Depends(require_permission("product.update")),
     ],
-) -> ApiResponse[ProductResponse]:
+) -> ApiResponse[ProductDetailResponse]:
     product = update_existing_product(
         session,
         product_id,
@@ -138,7 +153,7 @@ def update_product(
 
     return ApiResponse(
         success=True,
-        data=create_product_response(product),
+        data=create_product_response(product, detail=True),
         message="Ürün başarıyla güncellendi.",
     )
 
@@ -155,7 +170,7 @@ def delete_product(
     Depends(require_permission("product.delete")),
     ],
 ) -> ApiResponse[ProductResponse]:
-    product = archive_product(
+    product = delete_product_permanently(
         session,
         product_id,
     )
@@ -163,5 +178,5 @@ def delete_product(
     return ApiResponse(
         success=True,
         data=create_product_response(product),
-        message="Ürün arşivlendi.",
+        message="Ürün başarıyla silindi.",
     )

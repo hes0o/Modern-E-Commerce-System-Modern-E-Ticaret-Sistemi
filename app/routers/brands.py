@@ -14,7 +14,7 @@ from app.schemas.brand import (
 from app.schemas.common import ApiResponse
 from app.services.brand_service import (
     create_new_brand,
-    deactivate_brand,
+    delete_brand_permanently,
     get_brand,
     list_brands,
     update_existing_brand,
@@ -32,8 +32,9 @@ router = APIRouter(
 )
 def public_brand_list(
     session: Annotated[Session, Depends(get_session)],
+    category_id: int | None = None,
 ) -> ApiResponse[list[BrandResponse]]:
-    brands = list_brands(session)
+    brands = list_brands(session, category_id=category_id)
 
     return ApiResponse(
         success=True,
@@ -52,10 +53,12 @@ def admin_brand_list(
     User,
     Depends(require_permission("brand.read")),
     ],
+    category_id: int | None = None,
 ) -> ApiResponse[list[BrandResponse]]:
     brands = list_brands(
         session,
         include_inactive=True,
+        category_id=category_id,
     )
 
     return ApiResponse(
@@ -146,10 +149,10 @@ def delete_brand(
     Depends(require_permission("brand.delete")),
     ],
 ) -> ApiResponse[BrandResponse]:
-    brand = deactivate_brand(session, brand_id)
+    brand = delete_brand_permanently(session, brand_id)
 
     return ApiResponse(
         success=True,
         data=brand,
-        message="Marka pasif duruma getirildi.",
+        message="Marka başarıyla silindi.",
     )

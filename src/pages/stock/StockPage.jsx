@@ -224,8 +224,10 @@ export default function StockPage() {
 
 
         if (
-          minStock !== null &&
-          stock <= minStock
+          stock > 0 && (
+            stock <= 15 ||
+            (minStock !== null && stock <= minStock)
+          )
         ) {
 
           return (
@@ -302,78 +304,6 @@ export default function StockPage() {
         </div>
 
 
-        {/* FİLTRELER */}
-
-        <div className="flex items-center gap-2">
-
-          <button
-            onClick={() => {
-
-              setFilter('')
-              setPage(1)
-
-            }}
-
-            className={`btn btn-sm ${filter === ''
-              ? 'btn-primary'
-              : 'btn-secondary'
-              }`}
-          >
-
-            Tüm Ürünler
-
-          </button>
-
-
-          <button
-            onClick={() => {
-
-              setFilter('low')
-              setPage(1)
-
-            }}
-
-            className={`btn btn-sm ${filter === 'low'
-              ? 'btn-primary'
-              : 'btn-secondary'
-              } flex items-center gap-1`}
-          >
-
-            <AlertTriangle
-              size={14}
-              className="text-amber-500"
-            />
-
-            Azalan Stoklar
-
-          </button>
-
-
-          <button
-            onClick={() => {
-
-              setFilter('out')
-              setPage(1)
-
-            }}
-
-            className={`btn btn-sm ${filter === 'out'
-              ? 'btn-primary'
-              : 'btn-secondary'
-              } flex items-center gap-1`}
-          >
-
-            <CheckCircle
-              size={14}
-              className="text-red-500"
-            />
-
-            Tükenenler
-
-          </button>
-
-        </div>
-
       </div>
 
 
@@ -390,13 +320,43 @@ export default function StockPage() {
         searchValue={search}
 
         onSearchChange={(val) => {
-
           setSearch(val)
           setPage(1)
-
         }}
-
         searchPlaceholder="Ürün adı veya SKU ara..."
+        actions={
+          <div className="flex flex-wrap items-center gap-2">
+            <button
+              onClick={() => {
+                setFilter('')
+                setPage(1)
+              }}
+              className={`btn btn-sm ${filter === '' ? 'btn-primary' : 'btn-secondary'}`}
+            >
+              Tüm Ürünler
+            </button>
+            <button
+              onClick={() => {
+                setFilter('low')
+                setPage(1)
+              }}
+              className={`btn btn-sm ${filter === 'low' ? 'btn-primary' : 'btn-secondary'} flex items-center gap-1`}
+            >
+              <AlertTriangle size={14} className={filter === 'low' ? 'text-white' : 'text-amber-500'} />
+              Azalan Stoklar
+            </button>
+            <button
+              onClick={() => {
+                setFilter('out')
+                setPage(1)
+              }}
+              className={`btn btn-sm ${filter === 'out' ? 'btn-primary' : 'btn-secondary'} flex items-center gap-1`}
+            >
+              <CheckCircle size={14} className={filter === 'out' ? 'text-white' : 'text-red-500'} />
+              Tükenenler
+            </button>
+          </div>
+        }
 
         page={page}
 

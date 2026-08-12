@@ -34,3 +34,4 @@ class Category(TimestampMixin, table=True):
     )
     children: List["Category"] = Relationship(back_populates="parent")
     products: List["Product"] = Relationship(back_populates="category")  # type: ignore[name-defined]  # noqa: F821
+    brands: List["Brand"] = Relationship(back_populates="category")  # type: ignore[name-defined]  # noqa: F821

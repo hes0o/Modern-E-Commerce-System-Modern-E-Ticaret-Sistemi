@@ -4,6 +4,7 @@ import { useNavigate, Link, useLocation } from 'react-router-dom'
 import { useAuth } from '@/hooks/useAuth'
 import { getInitials } from '@/utils/formatters'
 import GlobalSearch from '@/components/common/GlobalSearch'
+import api from '@/services/api'
 
 const PAGE_TITLES = {
   '/dashboard': 'Kontrol Paneli',
@@ -33,6 +34,8 @@ export default function Navbar({ onMenuClick }) {
   const [dropdownOpen, setDropdownOpen] = useState(false)
   const [notificationsOpen, setNotificationsOpen] = useState(false)
   const [searchOpen, setSearchOpen] = useState(false)
+  const [notifications, setNotifications] = useState([])
+  const [unreadCount, setUnreadCount] = useState(0)
   const dropdownRef = useRef(null)
 
   useEffect(() => {
@@ -58,13 +61,30 @@ export default function Navbar({ onMenuClick }) {
     return () => document.removeEventListener('keydown', handler)
   }, [])
 
+  // Fetch real notifications from database
+  useEffect(() => {
+    async function fetchNotifications() {
+      try {
+        const res = await api.get('/api/admin/notifications', { params: { unread_only: false } })
+        const data = res.data.data
+        setNotifications(data.items || [])
+        setUnreadCount(data.unread_count || 0)
+      } catch (err) {
+        console.error('Navbar notifications error:', err)
+      }
+    }
+    fetchNotifications()
+    const interval = setInterval(fetchNotifications, 30000)
+    return () => clearInterval(interval)
+  }, [])
+
   const handleLogout = () => {
     logout()
     navigate('/login')
   }
 
   const getRoleLabel = (role) => {
-    const map = { Admin: 'Yönetici', Employee: 'Personel', Customer: 'Müşteri', Guest: 'Misafir' }
+    const map = { admin: 'Yönetici', personnel: 'Personel', Admin: 'Yönetici', Employee: 'Personel', Customer: 'Müşteri', Guest: 'Misafir' }
     return map[role] || role
   }
 
@@ -121,24 +141,34 @@ export default function Navbar({ onMenuClick }) {
               aria-label="Bildirimler"
             >
               <Bell size={18} />
-              <span className="absolute top-1.5 right-1.5 w-2 h-2 bg-indigo-600 rounded-full ring-2 ring-white" />
+              {unreadCount > 0 && (
+                <span className="absolute top-1.5 right-1.5 w-2.5 h-2.5 bg-indigo-600 rounded-full ring-2 ring-white" />
+              )}
             </button>
 
             {notificationsOpen && (
               <div className="absolute right-0 top-full mt-2 w-80 bg-white border border-slate-200/90 rounded-xl shadow-dropdown py-2 animate-scale-in z-50">
                 <div className="px-4 py-2 border-b border-slate-100 flex items-center justify-between">
                   <span className="text-xs font-bold text-slate-800">Bildirimler</span>
-                  <span className="text-[10px] font-semibold bg-indigo-50 text-indigo-600 px-2 py-0.5 rounded-full">2 Yeni</span>
+                  <span className="text-[10px] font-semibold bg-indigo-50 text-indigo-600 px-2 py-0.5 rounded-full">
+                    {unreadCount} Okunmamış
+                  </span>
                 </div>
-                <div className="divide-y divide-slate-100 text-xs">
-                  <div className="px-4 py-2.5 hover:bg-slate-50 transition-colors cursor-pointer">
-                    <p className="font-semibold text-slate-800">Kritik Stok Uyarısı</p>
-                    <p className="text-slate-500 text-[11px] mt-0.5">3 ürünün stoğu tükenmek üzere.</p>
-                  </div>
-                  <div className="px-4 py-2.5 hover:bg-slate-50 transition-colors cursor-pointer">
-                    <p className="font-semibold text-slate-800">Yeni Sipariş Alındı</p>
-                    <p className="text-slate-500 text-[11px] mt-0.5">Sipariş #ORD-01053 oluşturuldu.</p>
-                  </div>
+                <div className="divide-y divide-slate-100 text-xs max-h-64 overflow-y-auto">
+                  {notifications.length === 0 ? (
+                    <div className="px-4 py-6 text-center text-slate-400 text-xs">Henüz bildirim yok</div>
+                  ) : (
+                    notifications.slice(0, 5).map((n) => (
+                      <div
+                        key={n.id}
+                        onClick={() => { navigate('/notifications'); setNotificationsOpen(false) }}
+                        className={`px-4 py-2.5 hover:bg-slate-50 transition-colors cursor-pointer ${!n.is_read ? 'bg-indigo-50/30 font-semibold' : ''}`}
+                      >
+                        <p className="font-semibold text-slate-800 truncate">{n.title}</p>
+                        <p className="text-slate-500 text-[11px] mt-0.5 truncate">{n.message}</p>
+                      </div>
+                    ))
+                  )}
                 </div>
                 <div className="border-t border-slate-100 mt-1">
                   <button

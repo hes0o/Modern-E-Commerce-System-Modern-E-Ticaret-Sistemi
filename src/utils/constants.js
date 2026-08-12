@@ -4,7 +4,7 @@ export const ORDER_STATUSES = ['pending', 'processing', 'shipped', 'delivered', 
 
 export const PRODUCT_STATUSES = ['active', 'draft', 'out_of_stock']
 
-export const USER_ROLES = ['Admin', 'Employee', 'Customer', 'Guest']
+export const USER_ROLES = ['admin', 'personnel']
 
 export const USER_STATUSES = ['active', 'inactive']
 

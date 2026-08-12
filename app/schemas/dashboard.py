@@ -21,5 +21,6 @@ class DashboardSummary(BaseModel):
     total_sales: float
     total_customer_count: int
     low_stock_count: int
+    out_of_stock_count: int
     monthly_revenue: list[MonthlyRevenue]
     top_selling_products: list[TopSellingProduct]

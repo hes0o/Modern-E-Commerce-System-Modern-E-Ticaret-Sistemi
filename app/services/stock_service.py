@@ -290,11 +290,12 @@ def check_low_stock(
     variant_id: Optional[int],
 ) -> bool:
     """
-    Check if the product/variant stock is at or below its minimum level.
-
-    Returns True if a low-stock notification should be triggered.
+    Check if the product/variant stock is at or below 15 or its minimum level.
     """
     entity, current_stock = _get_current_stock(session, product_id, variant_id)
+
+    if current_stock <= 15:
+        return True
 
     min_level = getattr(entity, "min_stock_level", None)
     if min_level is None:

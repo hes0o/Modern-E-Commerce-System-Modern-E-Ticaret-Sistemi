@@ -88,6 +88,28 @@ def update_stock(
         session.commit()
         session.refresh(movement)
 
+        # Kritik stok bildirimi kontrolü
+        try:
+            from app.models.notification import Notification
+            from app.services.stock_service import check_low_stock
+            if check_low_stock(session, product_id, payload.variant_id):
+                from app.repositories.product_repository import get_product_by_id
+                prod = get_product_by_id(session, product_id)
+                p_name = prod.name if prod else f"Ürün #{product_id}"
+                curr_stk = movement.stock_after
+                notif = Notification(
+                    type="stock",
+                    title="Kritik Stok Uyarısı",
+                    message=f"{p_name} ürününün stoğu kritik seviyeye ({curr_stk} adet) düştü.",
+                    related_entity_type="product",
+                    related_entity_id=product_id,
+                    is_read=False,
+                )
+                session.add(notif)
+                session.commit()
+        except Exception as e:
+            print(f"Stok bildirimi oluşturma hatası: {e}")
+
     except InsufficientStockError as error:
 
         session.rollback()
@@ -193,11 +215,14 @@ def list_stock_products(
     items = []
 
     for product in products:
-        current_stock = (
-            product.stock
-            if product.stock is not None
-            else 0
-        )
+        if product.has_variants:
+            current_stock = sum(v.stock for v in product.variants if v.stock is not None)
+        else:
+            current_stock = (
+                product.stock
+                if product.stock is not None
+                else 0
+            )
 
         items.append(
             {

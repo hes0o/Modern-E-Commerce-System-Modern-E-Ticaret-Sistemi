@@ -93,10 +93,16 @@ export const orderService = {
     }
   },
 
-  async getSalesByMonth() {
+  async getSalesByMonth(period = '1M') {
     try {
-      const res = await api.get('/api/admin/reports/monthly-sales')
-      return res.data.data || []
+      const res = await api.get('/api/admin/reports/monthly-sales', { params: { period } })
+      const points = res.data?.data?.points || []
+      // SalesChart { name, sales, orders } formatına dönüştür
+      return points.map((p) => ({
+        name: p.name,
+        sales: p.sales,
+        orders: p.orders,
+      }))
     } catch {
       return []
     }

@@ -21,5 +21,8 @@ class Brand(TimestampMixin, table=True):
     logo_path: Optional[str] = Field(default=None, max_length=255)
     is_active: bool = Field(default=True)
 
+    category_id: Optional[int] = Field(default=None, foreign_key="categories.id", index=True)
+
     # Relationships
+    category: Optional["Category"] = Relationship(back_populates="brands")  # type: ignore[name-defined]  # noqa: F821
     products: List["Product"] = Relationship(back_populates="brand")  # type: ignore[name-defined]  # noqa: F821

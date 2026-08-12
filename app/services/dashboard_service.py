@@ -49,6 +49,7 @@ def get_dashboard_summary(
             "total_customer_count"
         ],
         low_stock_count=metrics["low_stock_count"],
+        out_of_stock_count=metrics["out_of_stock_count"],
         monthly_revenue=monthly_revenue,
         top_selling_products=top_selling_products,
     )

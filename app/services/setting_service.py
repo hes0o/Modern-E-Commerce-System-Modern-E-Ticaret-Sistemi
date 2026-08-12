@@ -15,6 +15,7 @@ from app.repositories.setting_repository import (
     get_setting_by_key,
     get_settings,
     save_setting,
+    upsert_setting_by_key,
 )
 from app.schemas.setting import (
     SettingCreate,
@@ -132,3 +133,16 @@ def remove_setting(
         raise NotFoundError("Ayar bulunamadı.")
 
     delete_setting(session, setting)
+
+
+def upsert_setting(
+    session: Session,
+    key: str,
+    value: str,
+    group: str,
+) -> SettingResponse:
+    """Key varsa değerini güncelle, yoksa yeni kayıt oluştur."""
+    key = key.strip().lower()
+    ensure_setting_is_not_sensitive(key)
+    setting = upsert_setting_by_key(session, key=key, value=value, group=group)
+    return SettingResponse.model_validate(setting)

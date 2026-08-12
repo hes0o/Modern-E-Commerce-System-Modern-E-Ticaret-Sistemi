@@ -1,11 +1,12 @@
 from typing import Optional
 
-from sqlalchemy import func
+from sqlalchemy import func, or_, case
+from sqlalchemy.orm import selectinload
 from sqlmodel import Session, col, select
 
-from app.models.enums import StockMovementType
+from app.models.enums import StockMovementType, ProductStatus
 from app.models.stock import StockMovement
-from app.models.product import Product
+from app.models.product import Product, ProductVariant
 
 
 def get_stock_movements(
@@ -98,25 +99,40 @@ def get_stock_products(
             search_condition
         )
 
+    # Subquery to calculate total variant stock
+    subq = (
+        select(func.coalesce(func.sum(ProductVariant.stock), 0))
+        .where(ProductVariant.product_id == Product.id)
+        .scalar_subquery()
+    )
+
+    # Effective stock is the sum of variants if has_variants is true, else product.stock
+    effective_stock = case(
+        (Product.has_variants == True, subq),
+        else_=Product.stock
+    )
+
     # Tükenen ürünler
     if filter_type == "out":
         condition = (
-            col(Product.stock).is_not(None)
-            & (col(Product.stock) == 0)
+            (effective_stock.is_not(None))
+            & (effective_stock == 0)
         )
 
         statement = statement.where(condition)
         count_statement = count_statement.where(condition)
 
-    # Azalan stoklar
+    # Azalan stoklar: Mevcut stok 15 veya daha az ise veya min_stock_level seviyesinde ise
     elif filter_type == "low":
         condition = (
-            col(Product.stock).is_not(None)
-            & col(Product.min_stock_level).is_not(None)
-            & (col(Product.stock) > 0)
+            (effective_stock.is_not(None))
+            & (effective_stock > 0)
             & (
-                col(Product.stock)
-                <= col(Product.min_stock_level)
+                (effective_stock <= 15)
+                | (
+                    col(Product.min_stock_level).is_not(None)
+                    & (effective_stock <= col(Product.min_stock_level))
+                )
             )
         )
 
@@ -125,6 +141,7 @@ def get_stock_products(
 
     statement = (
         statement
+        .options(selectinload(Product.variants))
         .order_by(
             col(Product.created_at).desc()
         )

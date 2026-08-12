@@ -1,10 +1,10 @@
 from typing import Optional, Union, Any
 from datetime import timezone, datetime
-
-from sqlmodel import Session
+from sqlmodel import Session, col, select
 
 from app.core.exceptions import NotFoundError
 from app.models.notification import Notification
+from app.models.product import Product, ProductVariant
 from app.models.user import User
 from app.repositories.notification_repository import (
     delete_notification,
@@ -20,6 +20,49 @@ from app.schemas.notification import (
 )
 
 
+def sync_dynamic_notifications(session: Session, user_id: int) -> None:
+    """
+    Stok seviyelerini kontrol eder ve mevcut kritik stoktaki ürünler için
+    veritabanında aktif bildirim yoksa otomatik veritabanına ekler.
+    """
+    try:
+        # 1. Düşük stoklu ürünleri bul
+        low_products = session.exec(
+            select(Product).where(
+                col(Product.has_variants).is_(False),
+                col(Product.stock).is_not(None),
+                col(Product.min_stock_level).is_not(None),
+                col(Product.stock) <= col(Product.min_stock_level),
+            )
+        ).all()
+
+        for p in low_products:
+            # Bu ürün için okunmamış stok bildirimi var mı?
+            existing = session.exec(
+                select(Notification).where(
+                    col(Notification.type) == "stock",
+                    col(Notification.related_entity_id) == p.id,
+                    col(Notification.is_read).is_(False),
+                )
+            ).first()
+
+            if not existing:
+                notif = Notification(
+                    type="stock",
+                    title="Kritik Stok Uyarısı",
+                    message=f"{p.name} ürününün stoğu kritik seviyeye ({p.stock} adet) düştü.",
+                    related_entity_type="product",
+                    related_entity_id=p.id,
+                    is_read=False,
+                )
+                session.add(notif)
+
+        session.commit()
+    except Exception as e:
+        session.rollback()
+        print(f"Bildirim senkronizasyon hatası: {e}")
+
+
 def list_notifications(
     session: Session,
     *,
@@ -27,6 +70,9 @@ def list_notifications(
     notification_type: Optional[str],
     unread_only: bool,
 ) -> NotificationListResponse:
+    # İnceleme anında dinamik durumları veritabanına senkronize et
+    sync_dynamic_notifications(session, user_id)
+
     notifications, total, unread_count = get_notifications(
         session,
         user_id=user_id,

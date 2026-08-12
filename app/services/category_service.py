@@ -2,7 +2,7 @@ from typing import Optional, Union, Any
 import re
 import unicodedata
 
-from sqlmodel import Session
+from sqlmodel import Session, select
 
 from app.core.exceptions import (
     BusinessRuleError,
@@ -21,7 +21,7 @@ from app.repositories.category_repository import (
 from app.repositories.category_repository import (
     update_category as save_category,
 )
-from app.schemas.category import CategoryCreate, CategoryUpdate
+from app.schemas.category import CategoryCreate, CategoryResponse, CategoryUpdate
 
 TURKISH_CHARACTER_MAP = str.maketrans(
     {
@@ -54,11 +54,25 @@ def list_categories(
     session: Session,
     *,
     active_only: bool = True,
-) -> list[Category]:
-    return get_categories(
+) -> list[dict]:
+    from sqlalchemy import func
+    from app.models.product import Product
+
+    categories = get_categories(
         session,
         active_only=active_only,
     )
+
+    result = []
+    for c in categories:
+        cnt = session.exec(
+            select(func.count(Product.id)).where(Product.category_id == c.id)
+        ).one()
+        c_dict = CategoryResponse.model_validate(c).model_dump()
+        c_dict["product_count"] = cnt
+        result.append(c_dict)
+
+    return result
 
 
 def get_category(
@@ -140,16 +154,20 @@ def create_new_category(
         category_data.parent_id,
     )
 
-    slug = create_slug(
+    base_slug = create_slug(
         category_data.slug or category_data.name,
     )
 
-    if not slug:
+    if not base_slug:
         raise BusinessRuleError(
             "Geçerli bir kategori bağlantı adı oluşturulamadı."
         )
 
-    ensure_slug_is_available(session, slug)
+    slug = base_slug
+    counter = 1
+    while get_category_by_slug(session, slug) is not None:
+        slug = f"{base_slug}-{counter}"
+        counter += 1
 
     category = Category(
         name=category_data.name.strip(),
@@ -211,10 +229,30 @@ def update_existing_category(
     return save_category(session, category)
 
 
-def deactivate_category(
+def delete_category_permanently(
     session: Session,
     category_id: int,
 ) -> Category:
+    from sqlalchemy import func
+    from app.models.product import Product
+    from app.models.brand import Brand
+
     category = get_category(session, category_id)
-    category.is_active = False
-    return save_category(session, category)
+
+    # Check for linked products
+    linked_products = session.exec(
+        select(func.count()).select_from(Product).where(Product.category_id == category_id)
+    ).one()
+    if linked_products > 0:
+        raise BusinessRuleError("Bu kategoriye ait ürünler olduğu için silinemez. Lütfen önce ürünleri silin.")
+
+    # Check for linked brands
+    linked_brands = session.exec(
+        select(func.count()).select_from(Brand).where(Brand.category_id == category_id)
+    ).one()
+    if linked_brands > 0:
+        raise BusinessRuleError("Bu kategoriye ait markalar olduğu için silinemez. Lütfen önce markaları silin.")
+
+    session.delete(category)
+    session.commit()
+    return category

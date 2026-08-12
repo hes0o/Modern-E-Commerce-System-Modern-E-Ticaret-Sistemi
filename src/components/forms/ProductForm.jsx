@@ -31,7 +31,7 @@ export default function ProductForm({
     discount_price: initialValues?.discount_price ?? '',
     vat_rate: initialValues?.vat_rate ?? 20,
     stock: initialValues?.stock ?? 0,
-    status: initialValues?.status || 'draft',
+    status: initialValues?.status || 'active',
     short_description: initialValues?.short_description || '',
     long_description: initialValues?.long_description || '',
     image: initialValues?.image || null,
@@ -46,11 +46,7 @@ export default function ProductForm({
     }
   }, [categories, formData.category_id])
 
-  useEffect(() => {
-    if (!formData.brand_id && brands.length > 0) {
-      setFormData(prev => ({ ...prev, brand_id: brands[0].id }))
-    }
-  }, [brands, formData.brand_id])
+
 
   // Update form data if initialValues change (e.g. edit mode load)
   useEffect(() => {
@@ -64,7 +60,7 @@ export default function ProductForm({
         discount_price: initialValues.discount_price ?? '',
         vat_rate: initialValues.vat_rate ?? 20,
         stock: initialValues.stock ?? 0,
-        status: initialValues.status || 'draft',
+        status: initialValues.status || 'active',
         short_description: initialValues.short_description || '',
         long_description: initialValues.long_description || '',
         image: initialValues.image || null,
@@ -75,10 +71,13 @@ export default function ProductForm({
   }, [initialValues])
 
   const handleChange = (field, value) => {
-    setFormData((prev) => ({
-      ...prev,
-      [field]: value
-    }))
+    setFormData((prev) => {
+      const next = { ...prev, [field]: value }
+      if (field === 'category_id') {
+        next.brand_id = '' // Reset brand when category changes
+      }
+      return next
+    })
   }
 
   const handleSubmit = (e) => {
@@ -99,6 +98,7 @@ export default function ProductForm({
       stock: hasVars ? null : Number(formData.stock),
       short_description: formData.short_description || formData.name,
       long_description: formData.long_description || formData.short_description || formData.name,
+      variants: hasVars ? formData.variants : [],
     }
 
     onSubmit(payload)
@@ -171,14 +171,11 @@ export default function ProductForm({
                   }
                   className="select"
                 >
-                  <option value="published">
-                    Yayınlandı (Aktif)
+                <option value="active">
+                    Aktif
                   </option>
-                  <option value="draft">
-                    Taslak
-                  </option>
-                  <option value="archived">
-                    Arşivlendi
+                  <option value="inactive">
+                    Pasif
                   </option>
                 </select>
               </div>
@@ -357,9 +354,12 @@ export default function ProductForm({
                   )
                 }
                 className="select"
+                disabled={!formData.category_id}
               >
-                <option value="">Marka Seçin (İsteğe Bağlı)</option>
-                {brands.map((b) => (
+                <option value="">
+                  {!formData.category_id ? 'Önce Kategori Seçin' : 'Marka Seçin (İsteğe Bağlı)'}
+                </option>
+                {brands.filter(b => b.category_id === Number(formData.category_id)).map((b) => (
                   <option
                     key={b.id}
                     value={b.id}

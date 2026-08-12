@@ -1,6 +1,6 @@
 from datetime import timezone, datetime
 
-from sqlalchemy import extract, func
+from sqlalchemy import extract, func, case
 from sqlmodel import Session, col, select
 
 from app.models.enums import OrderStatus
@@ -60,25 +60,41 @@ def get_dashboard_metrics(
         .where(col(Role.name) == "customer")
     ).one()
 
-    low_stock_products = session.exec(
+    # Subquery to calculate total variant stock
+    subq = (
+        select(func.coalesce(func.sum(ProductVariant.stock), 0))
+        .where(ProductVariant.product_id == Product.id)
+        .scalar_subquery()
+    )
+
+    # Effective stock is the sum of variants if has_variants is true, else product.stock
+    effective_stock = case(
+        (Product.has_variants == True, subq),
+        else_=Product.stock
+    )
+
+    low_stock_count = session.exec(
         select(func.count())
         .select_from(Product)
         .where(
-            col(Product.has_variants).is_(False),
-            col(Product.stock).is_not(None),
-            col(Product.min_stock_level).is_not(None),
-            col(Product.stock)
-            <= col(Product.min_stock_level),
+            effective_stock.is_not(None),
+            effective_stock > 0,
+            (
+                (effective_stock <= 15)
+                | (
+                    col(Product.min_stock_level).is_not(None)
+                    & (effective_stock <= col(Product.min_stock_level))
+                )
+            ),
         )
     ).one()
 
-    low_stock_variants = session.exec(
+    out_of_stock_count = session.exec(
         select(func.count())
-        .select_from(ProductVariant)
+        .select_from(Product)
         .where(
-            col(ProductVariant.min_stock_level).is_not(None),
-            col(ProductVariant.stock)
-            <= col(ProductVariant.min_stock_level),
+            effective_stock.is_not(None),
+            effective_stock == 0,
         )
     ).one()
 
@@ -107,13 +123,9 @@ def get_dashboard_metrics(
         select(
             Product.id,
             Product.name,
-            func.sum(OrderItem.quantity).label(
-                "quantity_sold"
-            ),
-            func.sum(OrderItem.line_total).label(
-                "revenue"
-            ),
-            Product.stock,
+            func.sum(OrderItem.quantity).label("quantity_sold"),
+            func.sum(OrderItem.line_total).label("revenue"),
+            effective_stock.label("stock"),
         )
         .join(
             OrderItem,
@@ -128,6 +140,7 @@ def get_dashboard_metrics(
             Product.id,
             Product.name,
             Product.stock,
+            Product.has_variants,
         )
         .order_by(
             func.sum(OrderItem.quantity).desc()
@@ -140,9 +153,8 @@ def get_dashboard_metrics(
         "monthly_sales": monthly_sales,
         "total_sales": total_sales,
         "total_customer_count": total_customer_count,
-        "low_stock_count": (
-            low_stock_products + low_stock_variants
-        ),
+        "low_stock_count": low_stock_count,
+        "out_of_stock_count": out_of_stock_count,
         "monthly_rows": monthly_rows,
         "top_product_rows": top_product_rows,
     }
