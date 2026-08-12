@@ -65,8 +65,8 @@ export default function ProductListPage() {
         </div>
       ),
     },
-    { header: 'Kategori', accessor: 'category' },
-    { header: 'Marka', accessor: 'brand' },
+    { header: 'Kategori', accessor: 'category_name' },
+    { header: 'Marka', accessor: 'brand_name' },
     {
       header: 'Fiyat',
       accessor: 'price',
@@ -76,9 +76,19 @@ export default function ProductListPage() {
       header: 'Stok',
       accessor: 'stock',
       render: (row) => (
-        <span className={row.stock === 0 ? 'text-red-600 font-bold' : row.stock <= 10 ? 'text-amber-600 font-semibold' : ''}>
-          {row.stock} adet
-        </span>
+<span
+  className={
+    row.has_variants
+      ? 'text-indigo-600 font-semibold'
+      : row.stock === 0
+        ? 'text-red-600 font-bold'
+        : row.stock <= 10
+          ? 'text-amber-600 font-semibold'
+          : ''
+  }
+>
+  {row.has_variants ? 'Varyantlı' : `${row.stock} adet`}
+</span>
       ),
     },
     {

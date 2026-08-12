@@ -21,6 +21,8 @@ const STATUS_LABEL_MAP = {
   cancelled: { color: 'red', label: 'İptal Edildi' },
   out_of_stock: { color: 'red', label: 'Stokta Yok' },
   draft: { color: 'slate', label: 'Taslak' },
+  published: { color: 'green', label: 'Yayında' },
+  archived: { color: 'slate', label: 'Arşivlendi' },
   low_stock: { color: 'yellow', label: 'Kritik Stok' },
 }
 

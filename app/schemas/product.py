@@ -1,6 +1,12 @@
 from datetime import datetime
 
-from pydantic import BaseModel, ConfigDict, Field, model_validator
+from pydantic import (
+    AliasPath,
+    BaseModel,
+    ConfigDict,
+    Field,
+    model_validator,
+)
 
 from app.models.enums import ProductStatus
 
@@ -111,6 +117,13 @@ class ProductResponse(BaseModel):
     id: int
     category_id: int
     brand_id: int | None
+    category_name: str = Field(
+        validation_alias=AliasPath("category", "name"),
+    )
+    brand_name: str | None = Field(
+        default=None,
+        validation_alias=AliasPath("brand", "name"),
+    )
     supplier: str | None
     sku: str
     barcode: str | None
