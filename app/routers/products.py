@@ -54,6 +54,14 @@ def get_product_list(
         int | None,
         Query(gt=0),
     ] = None,
+        color: Annotated[
+        str | None,
+        Query(min_length=1, max_length=50),
+    ] = None,
+    size: Annotated[
+        str | None,
+        Query(min_length=1, max_length=30),
+    ] = None,
     min_price: Annotated[
         float | None,
         Query(ge=0),
@@ -80,6 +88,8 @@ def get_product_list(
         search=search,
         category_id=category_id,
         brand_id=brand_id,
+        color=color,
+        size=size,
         min_price=min_price,
         max_price=max_price,
         is_new=is_new,

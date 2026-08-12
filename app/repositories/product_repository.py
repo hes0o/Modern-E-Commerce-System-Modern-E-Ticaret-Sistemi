@@ -2,7 +2,7 @@ from sqlalchemy import func, or_
 from sqlmodel import Session, col, select
 
 from app.models.enums import ProductStatus
-from app.models.product import Product
+from app.models.product import Product, ProductVariant
 
 
 def get_products(
@@ -13,6 +13,8 @@ def get_products(
     search: str | None = None,
     category_id: int | None = None,
     brand_id: int | None = None,
+    color: str | None = None,
+    size: str | None = None,
     min_price: float | None = None,
     max_price: float | None = None,
     is_new: bool | None = None,
@@ -43,6 +45,29 @@ def get_products(
         brand_condition = col(Product.brand_id) == brand_id
         statement = statement.where(brand_condition)
         count_statement = count_statement.where(brand_condition)
+
+    variant_filters = []
+
+    if color:
+        variant_filters.append(
+            col(ProductVariant.color).ilike(color.strip())
+        )
+
+    if size:
+        variant_filters.append(
+            col(ProductVariant.size).ilike(size.strip())
+        )
+
+    if variant_filters:
+        variant_condition = (
+            select(ProductVariant.id)
+            .where(
+                ProductVariant.product_id == Product.id,
+                *variant_filters,
+            )
+            .exists()
+        )
+        statement = statement.where(variant_condition)
 
     effective_price = func.coalesce(
         Product.discount_price,

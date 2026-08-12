@@ -199,6 +199,8 @@ E-posta doğrulama body:
 - `page_size`
 - `search`
 - `category_id`
+- `color`
+- `size`
 
 Ürün durumları:
 
@@ -383,5 +385,4 @@ Frontend, `403` cevabında kullanıcıyı çıkış yaptırmamalı; yalnızca ye
 ## 12. Bilinen Sınırlamalar
 
 - `terms_accepted` backend’e kaydedilmiyor.
-- Renk ve beden filtreleri ürün listesi seviyesinde henüz yok.
 - Frontend branch’leri backend ile ortak Git geçmişine sahip değildir; entegrasyon kontrollü bir branch üzerinde yapılmalıdır.

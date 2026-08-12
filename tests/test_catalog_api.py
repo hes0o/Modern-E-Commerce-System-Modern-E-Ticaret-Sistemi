@@ -2,7 +2,7 @@ from sqlmodel import Session
 
 from app.models.category import Category
 from app.models.enums import ProductStatus
-from app.models.product import Product
+from app.models.product import Product, ProductVariant
 
 
 def test_list_categories(client, engine):
@@ -176,3 +176,64 @@ def test_invalid_price_range_returns_error(client):
 
     assert response.status_code == 422
     assert response.json()["success"] is False
+
+def test_filter_products_by_variant_color_and_size(
+    client,
+    engine,
+):
+    with Session(engine) as session:
+        category = Category(
+            name="Varyant Filtre Kategorisi",
+            slug="varyant-filtre-kategorisi",
+            is_active=True,
+        )
+        session.add(category)
+        session.flush()
+
+        product = Product(
+            category_id=category.id,
+            sku="VARIANT-FILTER-001",
+            name="Varyant Filtre Ürünü",
+            slug="varyant-filtre-urunu",
+            short_description="Varyant filtre testi",
+            long_description="Renk ve beden filtre testi",
+            price=750,
+            vat_rate=20,
+            status=ProductStatus.PUBLISHED,
+            has_variants=True,
+            stock=None,
+            min_stock_level=1,
+        )
+        session.add(product)
+        session.flush()
+
+        session.add_all(
+            [
+                ProductVariant(
+                    product_id=product.id,
+                    sku="VARIANT-MAVI-M",
+                    color="Mavi",
+                    size="M",
+                    stock=5,
+                ),
+                ProductVariant(
+                    product_id=product.id,
+                    sku="VARIANT-SIYAH-L",
+                    color="Siyah",
+                    size="L",
+                    stock=3,
+                ),
+            ]
+        )
+        session.commit()
+
+    response = client.get(
+        "/api/products?color=mavi&size=m"
+    )
+
+    assert response.status_code == 200
+    body = response.json()
+    assert body["data"]["total"] == 1
+    assert body["data"]["items"][0]["sku"] == (
+        "VARIANT-FILTER-001"
+    )
