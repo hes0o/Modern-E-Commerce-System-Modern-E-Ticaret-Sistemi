@@ -207,6 +207,22 @@ def test_filter_products_by_variant_color_and_size(
         session.add(product)
         session.flush()
 
+        unmatched_product = Product(
+            category_id=category.id,
+            sku="VARIANT-FILTER-002",
+            name="Eşleşmeyen Varyantsız Ürün",
+            slug="eslesmeyen-varyantsiz-urun",
+            short_description="Filtre dışı ürün",
+            long_description="Renk ve beden filtresiyle eşleşmez",
+            price=900,
+            vat_rate=20,
+            status=ProductStatus.PUBLISHED,
+            has_variants=False,
+            stock=8,
+            min_stock_level=1,
+        )
+        session.add(unmatched_product)
+
         session.add_all(
             [
                 ProductVariant(

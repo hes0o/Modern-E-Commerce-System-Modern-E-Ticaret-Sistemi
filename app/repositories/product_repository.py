@@ -68,6 +68,9 @@ def get_products(
             .exists()
         )
         statement = statement.where(variant_condition)
+        count_statement = count_statement.where(
+            variant_condition,
+        )
 
     effective_price = func.coalesce(
         Product.discount_price,
