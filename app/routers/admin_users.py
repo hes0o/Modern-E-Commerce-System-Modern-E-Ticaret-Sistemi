@@ -17,6 +17,7 @@ from app.schemas.admin_user import (
 from app.schemas.common import ApiResponse
 from app.services.admin_user_service import (
     create_admin_user,
+    delete_admin_user,
     get_admin_user,
     list_admin_users,
     update_admin_user,
@@ -115,4 +116,26 @@ def update_user(
         success=True,
         data=user,
         message="Kullanıcı başarıyla güncellendi.",
+    )
+
+
+@router.delete(
+    "/{user_id}",
+    response_model=ApiResponse[None],
+)
+def delete_user(
+    user_id: int,
+    session: Annotated[Session, Depends(get_session)],
+    admin: Annotated[User, Depends(require_permission("user.delete"))],
+) -> ApiResponse[None]:
+    delete_admin_user(
+        session,
+        user_id=user_id,
+        current_admin_id=admin.id,
+    )
+
+    return ApiResponse(
+        success=True,
+        data=None,
+        message="Kullanıcı veritabanından kalıcı olarak silindi.",
     )

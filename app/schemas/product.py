@@ -5,6 +5,41 @@ from pydantic import BaseModel, ConfigDict, Field, model_validator
 
 from app.models.enums import ProductStatus
 
+class ProductVariantCreate(BaseModel):
+    sku: str = Field(min_length=1, max_length=60)
+    color: Optional[str] = Field(default=None, max_length=50)
+    size: Optional[str] = Field(default=None, max_length=30)
+    price: Optional[float] = Field(default=None, gt=0)
+    discount_price: Optional[float] = Field(default=None, gt=0)
+    stock: int = Field(default=0, ge=0)
+    min_stock_level: Optional[int] = Field(default=0, ge=0)
+    image_path: Optional[str] = Field(default=None, max_length=255)
+
+class ProductVariantUpdate(BaseModel):
+    id: Optional[int] = None
+    sku: Optional[str] = Field(default=None, min_length=1, max_length=60)
+    color: Optional[str] = Field(default=None, max_length=50)
+    size: Optional[str] = Field(default=None, max_length=30)
+    price: Optional[float] = Field(default=None, gt=0)
+    discount_price: Optional[float] = Field(default=None, gt=0)
+    stock: Optional[int] = Field(default=None, ge=0)
+    min_stock_level: Optional[int] = Field(default=None, ge=0)
+    image_path: Optional[str] = Field(default=None, max_length=255)
+
+class ProductVariantResponse(BaseModel):
+    id: int
+    product_id: int
+    sku: str
+    color: Optional[str]
+    size: Optional[str]
+    price: Optional[float]
+    discount_price: Optional[float]
+    stock: int
+    min_stock_level: Optional[int]
+    image_path: Optional[str]
+
+    model_config = ConfigDict(from_attributes=True)
+
 
 class ProductCreate(BaseModel):
     category_id: int = Field(gt=0)
@@ -28,12 +63,13 @@ class ProductCreate(BaseModel):
     vat_rate: float = Field(default=20, ge=0, le=100)
     status: ProductStatus = ProductStatus.DRAFT
     has_variants: bool = False
-    stock: Optional[int] = Field(default=0, ge=0)
+    stock: Optional[int] = Field(default=None, ge=0)
     min_stock_level: Optional[int] = Field(default=0, ge=0)
     is_new: bool = False
     is_bestseller: bool = False
     is_featured: bool = False
     is_campaign: bool = False
+    variants: list[ProductVariantCreate] = []
 
     @model_validator(mode="after")
     def validate_product_rules(self) -> "ProductCreate":
@@ -45,17 +81,16 @@ class ProductCreate(BaseModel):
                 "İndirimli fiyat normal fiyattan düşük olmalıdır."
             )
 
-        if self.has_variants and self.stock is not None:
-            raise ValueError(
-                "Varyantlı ürünlerde ana ürün stoku boş olmalıdır."
-            )
+        # Auto-fix: varyantlı üründe stock otomatik None yap
+        if self.has_variants:
+            self.stock = None
 
+        # Varyantsız üründe stok zorunlu
         if not self.has_variants and self.stock is None:
-            raise ValueError(
-                "Varyantsız ürünlerde stok bilgisi zorunludur."
-            )
+            self.stock = 0
 
         return self
+
 
 
 class ProductUpdate(BaseModel):
@@ -98,6 +133,7 @@ class ProductUpdate(BaseModel):
     is_bestseller: Optional[bool] = None
     is_featured: Optional[bool] = None
     is_campaign: Optional[bool] = None
+    variants: Optional[list[ProductVariantUpdate]] = None
 
 
 class ProductResponse(BaseModel):
@@ -127,6 +163,9 @@ class ProductResponse(BaseModel):
     updated_at: datetime
 
     model_config = ConfigDict(from_attributes=True)
+
+class ProductDetailResponse(ProductResponse):
+    variants: list[ProductVariantResponse] = []
 
 class ProductListResponse(BaseModel):
     items: list[ProductResponse]

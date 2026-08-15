@@ -2,6 +2,7 @@ from typing import Optional, Union, Any
 from typing import Annotated
 
 from fastapi import APIRouter, Depends, status
+from pydantic import BaseModel
 from sqlmodel import Session
 
 from app.core.dependencies import require_permission
@@ -18,6 +19,7 @@ from app.services.setting_service import (
     list_settings,
     remove_setting,
     update_existing_setting,
+    upsert_setting,
 )
 
 router = APIRouter(
@@ -104,4 +106,39 @@ def delete_setting(
         success=True,
         data=None,
         message="Sistem ayarı silindi.",
+    )
+
+
+class SettingUpsertItem(BaseModel):
+    key: str
+    value: Optional[str] = None
+    setting_group: Optional[str] = None
+
+
+@router.put(
+    "/upsert",
+    response_model=ApiResponse[list[SettingResponse]],
+)
+def upsert_settings(
+    items: list[SettingUpsertItem],
+    session: Annotated[Session, Depends(get_session)],
+    _admin: Annotated[User, Depends(require_permission("settings.update"))],
+) -> ApiResponse[list[SettingResponse]]:
+    """
+    Birden fazla ayarı toplu kaydet.
+    Key varsa günceller, yoksa oluşturur (409 hatası olmaz).
+    """
+    results = [
+        upsert_setting(
+            session,
+            key=item.key,
+            value=item.value or "",
+            group=item.setting_group or "general",
+        )
+        for item in items
+    ]
+    return ApiResponse(
+        success=True,
+        data=results,
+        message="Ayarlar kaydedildi.",
     )

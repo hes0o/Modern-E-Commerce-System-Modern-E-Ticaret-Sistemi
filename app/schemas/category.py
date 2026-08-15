@@ -46,6 +46,7 @@ class CategoryResponse(BaseModel):
     seo_title: Optional[str]
     seo_description: Optional[str]
     is_active: bool
+    product_count: Optional[int] = 0
     created_at: datetime
     updated_at: datetime
 

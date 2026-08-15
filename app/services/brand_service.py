@@ -1,8 +1,8 @@
 from datetime import timezone, datetime
 
-from sqlmodel import Session
+from sqlmodel import Session, select
 
-from app.core.exceptions import ConflictError, NotFoundError
+from app.core.exceptions import ConflictError, NotFoundError, BusinessRuleError
 from app.models.brand import Brand
 from app.repositories.brand_repository import (
     get_brand_by_id,
@@ -15,21 +15,33 @@ from app.schemas.brand import (
     BrandResponse,
     BrandUpdate,
 )
+from app.repositories.category_repository import get_category_by_id
 
 
 def list_brands(
     session: Session,
     *,
     include_inactive: bool = False,
-) -> list[BrandResponse]:
+    category_id: Optional[int] = None,
+) -> list[dict]:
+    from sqlalchemy import func
+    from app.models.product import Product
+
     brands = get_brands(
         session,
         include_inactive=include_inactive,
+        category_id=category_id,
     )
-    return [
-        BrandResponse.model_validate(brand)
-        for brand in brands
-    ]
+    result = []
+    for b in brands:
+        cnt = session.exec(
+            select(func.count(Product.id)).where(Product.brand_id == b.id)
+        ).one()
+        b_dict = BrandResponse.model_validate(b).model_dump()
+        b_dict["product_count"] = cnt
+        b_dict["slug"] = b.name.lower().replace(" ", "-")
+        result.append(b_dict)
+    return result
 
 
 def get_brand(
@@ -54,10 +66,15 @@ def create_new_brand(
     if existing_brand is not None:
         raise ConflictError("Bu marka adı zaten kullanılıyor.")
 
+    category = get_category_by_id(session, payload.category_id)
+    if category is None:
+        raise NotFoundError("Belirtilen kategori bulunamadı.")
+
     brand = Brand(
         name=name,
         logo_path=payload.logo_path,
         is_active=payload.is_active,
+        category_id=payload.category_id,
     )
     saved_brand = save_brand(session, brand)
 
@@ -90,6 +107,11 @@ def update_existing_brand(
             )
 
         update_data["name"] = name
+        
+    if "category_id" in update_data and update_data["category_id"] is not None:
+        category = get_category_by_id(session, update_data["category_id"])
+        if category is None:
+            raise NotFoundError("Belirtilen kategori bulunamadı.")
 
     for field, value in update_data.items():
         setattr(brand, field, value)
@@ -100,17 +122,27 @@ def update_existing_brand(
     return BrandResponse.model_validate(saved_brand)
 
 
-def deactivate_brand(
+def delete_brand_permanently(
     session: Session,
     brand_id: int,
 ) -> BrandResponse:
+    from sqlalchemy import func
+    from app.models.product import Product
+
     brand = get_brand_by_id(session, brand_id)
 
     if brand is None:
         raise NotFoundError("Marka bulunamadı.")
 
-    brand.is_active = False
-    brand.updated_at = datetime.now(timezone.utc)
-    saved_brand = save_brand(session, brand)
+    # Check for linked products
+    linked_products = session.exec(
+        select(func.count()).select_from(Product).where(Product.brand_id == brand_id)
+    ).one()
+    if linked_products > 0:
+        raise BusinessRuleError("Bu markaya ait ürünler olduğu için silinemez. Lütfen önce ürünleri silin.")
 
-    return BrandResponse.model_validate(saved_brand)
+    brand_resp = BrandResponse.model_validate(brand)
+    session.delete(brand)
+    session.commit()
+
+    return brand_resp

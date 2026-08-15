@@ -153,6 +153,20 @@ def create_checkout_order(
             customer_note=payload.customer_note,
             contract_version_accepted=payload.contract_version_accepted,
         )
+
+        # Yeni sipariş bildirimi ekle
+        from app.models.notification import Notification
+        cust_info = guest_name or (current_user.name if current_user else "Müşteri")
+        order_notif = Notification(
+            type="order",
+            title="Yeni Sipariş Alındı",
+            message=f"{cust_info} tarafından #{order.order_number} numaralı sipariş oluşturuldu (Tutar: ₺{order.grand_total:.2f}).",
+            related_entity_type="order",
+            related_entity_id=order.id,
+            is_read=False,
+        )
+        session.add(order_notif)
+
         session.commit()
 
     except EmptyCartError as error:

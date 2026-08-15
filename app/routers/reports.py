@@ -1,5 +1,5 @@
 from datetime import date
-from typing import Annotated
+from typing import Annotated, Literal, Optional
 
 from fastapi import APIRouter, Depends, Query, Response
 from sqlmodel import Session
@@ -8,8 +8,9 @@ from app.core.dependencies import require_permission
 from app.database import get_session
 from app.models.user import User
 from app.schemas.common import ApiResponse
-from app.schemas.report import SalesReportResponse
+from app.schemas.report import PeriodSalesResponse, SalesReportResponse
 from app.services.report_service import (
+    generate_period_sales,
     generate_sales_report,
     generate_sales_report_csv,
 )
@@ -72,4 +73,25 @@ def export_sales_report(
                 f'attachment; filename="{filename}"'
             )
         },
+    )
+
+
+@router.get(
+    "/monthly-sales",
+    response_model=ApiResponse[PeriodSalesResponse],
+)
+def monthly_sales(
+    session: Annotated[Session, Depends(get_session)],
+    _admin: Annotated[User, Depends(require_permission("report.read"))],
+    period: Annotated[
+        Literal["1D", "7D", "1M", "1Y", "2Y"],
+        Query(description="Grafik periyodu"),
+    ] = "1M",
+) -> ApiResponse[PeriodSalesResponse]:
+    """Dashboard Gelir Performansı grafiği için gerçek satış verileri."""
+    data = generate_period_sales(session, period=period)
+    return ApiResponse(
+        success=True,
+        data=data,
+        message="Satış verileri getirildi.",
     )

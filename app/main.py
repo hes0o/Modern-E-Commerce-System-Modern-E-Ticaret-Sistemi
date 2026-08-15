@@ -37,12 +37,12 @@ app = FastAPI(
     description="Modern E-Ticaret Sistemi REST API",
 )
 
+app.add_middleware(SecurityHeadersMiddleware)
 app.add_middleware(
     RateLimitMiddleware,
     request_limit=120,
     window_seconds=60,
 )
-
 app.add_middleware(
     CORSMiddleware,
     allow_origins=[
@@ -58,7 +58,6 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
-
 app.add_exception_handler(
     AppError,
     app_error_handler,
@@ -71,7 +70,6 @@ app.add_exception_handler(
     Exception,
     unexpected_error_handler,
 )
-app.add_middleware(SecurityHeadersMiddleware)
 
 app.include_router(auth_router)
 app.include_router(categories_router)

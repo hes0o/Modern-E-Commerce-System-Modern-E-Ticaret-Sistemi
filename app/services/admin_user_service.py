@@ -116,6 +116,22 @@ def create_admin_user(
     )
     saved_user = save_admin_user(session, user)
 
+    # Yeni üye bildirimi ekle
+    try:
+        from app.models.notification import Notification
+        notification = Notification(
+            type="user",
+            title="Yeni Kullanıcı Kaydı",
+            message=f"{saved_user.name} ({saved_user.email}) sisteme kaydoldu.",
+            related_entity_type="user",
+            related_entity_id=saved_user.id,
+            is_read=False,
+        )
+        session.add(notification)
+        session.commit()
+    except Exception as e:
+        print(f"Bildirim ekleme hatası: {e}")
+
     return to_admin_user_response(saved_user)
 
 
@@ -167,3 +183,20 @@ def update_admin_user(
     saved_user = save_admin_user(session, user)
 
     return to_admin_user_response(saved_user)
+
+
+def delete_admin_user(
+    session: Session,
+    *,
+    user_id: int,
+    current_admin_id: int,
+) -> None:
+    if user_id == current_admin_id:
+        raise BusinessRuleError("Kendi hesabınızı silemezsiniz.")
+
+    user = get_admin_user_by_id(session, user_id)
+    if user is None:
+        raise NotFoundError("Kullanıcı bulunamadı.")
+
+    session.delete(user)
+    session.commit()

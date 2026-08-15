@@ -39,8 +39,7 @@ const navSections = [
         children: [
           { label: 'Tüm Ürünler', path: '/products', icon: List },
           { label: 'Yeni Ürün Ekle', path: '/products/new', icon: PlusCircle },
-          { label: 'Kategoriler', path: '/products/categories', icon: Tag },
-          { label: 'Markalar', path: '/products/brands', icon: Award },
+          { label: 'Kategori & Markalar', path: '/products/categories-brands', icon: Tag },
         ],
       },
       {

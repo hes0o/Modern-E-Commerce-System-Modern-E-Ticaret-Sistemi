@@ -10,8 +10,7 @@ const DashboardPage = lazy(() => import('@/pages/dashboard/DashboardPage'))
 // Products
 const ProductListPage = lazy(() => import('@/pages/products/ProductListPage'))
 const ProductFormPage = lazy(() => import('@/pages/products/ProductFormPage'))
-const CategoriesPage = lazy(() => import('@/pages/products/CategoriesPage'))
-const BrandsPage = lazy(() => import('@/pages/products/BrandsPage'))
+const CategoriesBrandsPage = lazy(() => import('@/pages/products/CategoriesBrandsPage'))
 
 // Orders
 const OrderListPage = lazy(() => import('@/pages/orders/OrderListPage'))
@@ -69,8 +68,7 @@ export default function AppRouter() {
             <Route path="products" element={<ProductListPage />} />
             <Route path="products/new" element={<ProductFormPage />} />
             <Route path="products/:id/edit" element={<ProductFormPage />} />
-            <Route path="products/categories" element={<CategoriesPage />} />
-            <Route path="products/brands" element={<BrandsPage />} />
+            <Route path="products/categories-brands" element={<CategoriesBrandsPage />} />
 
             {/* Orders */}
             <Route path="orders" element={<OrderListPage />} />

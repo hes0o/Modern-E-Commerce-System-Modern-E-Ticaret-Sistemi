@@ -9,6 +9,7 @@ Three related models:
 
 from typing import Optional, List
 
+import sqlalchemy as sa
 from sqlalchemy import Numeric, CheckConstraint, Column, Index, Text
 from sqlmodel import Field, Relationship, SQLModel
 
@@ -58,7 +59,17 @@ class Product(TimestampMixin, table=True):
     vat_rate: float = Field(sa_column=Column(Numeric(5, 2)))
 
     # Status & stock
-    status: ProductStatus = Field(default=ProductStatus.DRAFT)
+    status: ProductStatus = Field(
+        default=ProductStatus.ACTIVE,
+        sa_column=Column(
+            sa.Enum(
+                ProductStatus,
+                values_callable=lambda x: [e.value for e in x],
+            ),
+            nullable=False,
+            default=ProductStatus.ACTIVE.value,
+        ),
+    )
     has_variants: bool = Field(default=False)
     stock: Optional[int] = Field(default=None)  # Only for non-variant products
     min_stock_level: Optional[int] = Field(default=None)

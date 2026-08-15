@@ -1,5 +1,6 @@
 from typing import Optional, Union, Any
 from sqlalchemy import func, or_
+from sqlalchemy.orm import selectinload
 from sqlmodel import Session, col, select
 
 from app.models.enums import ProductStatus
@@ -45,7 +46,8 @@ def get_products(
         )
 
     statement = (
-        statement.order_by(
+        statement.options(selectinload(Product.variants))
+        .order_by(
             col(Product.created_at).desc(),
         )
         .offset((page - 1) * page_size)
@@ -62,7 +64,8 @@ def get_product_by_id(
     session: Session,
     product_id: int,
 ) -> Optional[Product]:
-    return session.get(Product, product_id)
+    statement = select(Product).where(col(Product.id) == product_id).options(selectinload(Product.variants))
+    return session.exec(statement).first()
 
 
 def get_product_by_slug(

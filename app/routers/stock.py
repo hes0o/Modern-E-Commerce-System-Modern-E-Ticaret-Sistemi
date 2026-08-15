@@ -1,23 +1,28 @@
-from typing import Optional, Union, Any
-from typing import Annotated
+from typing import Optional, Annotated
 
 from fastapi import APIRouter, Depends, Query
 from sqlmodel import Session
 
 from app.core.dependencies import require_permission
 from app.database import get_session
+
 from app.models.enums import StockMovementType
 from app.models.user import User
+
 from app.schemas.common import ApiResponse
+
 from app.schemas.stock import (
     StockMovementListResponse,
     StockMovementResponse,
     StockUpdateRequest,
 )
+
 from app.services.stock_api_service import (
     list_stock_movements,
+    list_stock_products,
     update_stock,
 )
+
 
 router = APIRouter(
     prefix="/api/admin/stock",
@@ -32,12 +37,16 @@ router = APIRouter(
 def change_product_stock(
     product_id: int,
     payload: StockUpdateRequest,
-    session: Annotated[Session, Depends(get_session)],
+    session: Annotated[
+        Session,
+        Depends(get_session),
+    ],
     admin: Annotated[
-    User,
-    Depends(require_permission("stock.update")),
+        User,
+        Depends(require_permission("stock.update")),
     ],
 ) -> ApiResponse[StockMovementResponse]:
+
     movement = update_stock(
         session,
         product_id=product_id,
@@ -53,21 +62,72 @@ def change_product_stock(
 
 
 @router.get(
+    "/products",
+)
+def stock_product_list(
+    session: Annotated[
+        Session,
+        Depends(get_session),
+    ],
+    _admin: Annotated[
+        User,
+        Depends(require_permission("stock.read")),
+    ],
+    page: Annotated[
+        int,
+        Query(ge=1),
+    ] = 1,
+    page_size: Annotated[
+        int,
+        Query(ge=1, le=100),
+    ] = 10,
+    search: Optional[str] = None,
+    filter: Optional[str] = None,
+):
+
+    data = list_stock_products(
+        session,
+        page=page,
+        page_size=page_size,
+        search=search,
+        filter_type=filter,
+    )
+
+    return ApiResponse(
+        success=True,
+        data=data,
+        message="Stok ürünleri başarıyla getirildi.",
+    )
+
+
+@router.get(
     "/movements",
     response_model=ApiResponse[StockMovementListResponse],
 )
 def stock_movement_list(
-    session: Annotated[Session, Depends(get_session)],
-    _admin: Annotated[
-    User,
-    Depends(require_permission("stock.read")),
+    session: Annotated[
+        Session,
+        Depends(get_session),
     ],
-    page: Annotated[int, Query(ge=1)] = 1,
-    page_size: Annotated[int, Query(ge=1, le=100)] = 20,
+    _admin: Annotated[
+        User,
+        Depends(require_permission("stock.read")),
+    ],
+    page: Annotated[
+        int,
+        Query(ge=1),
+    ] = 1,
+    page_size: Annotated[
+        int,
+        Query(ge=1, le=100),
+    ] = 20,
     product_id: Optional[int] = None,
     variant_id: Optional[int] = None,
-    movement_type: Optional[StockMovementType] = None,
+    movement_type: Optional[
+        StockMovementType
+    ] = None,
 ) -> ApiResponse[StockMovementListResponse]:
+
     movements = list_stock_movements(
         session,
         page=page,
