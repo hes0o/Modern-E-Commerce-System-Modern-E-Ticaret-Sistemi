@@ -11,7 +11,7 @@ export default function LoginPage() {
   const navigate = useNavigate()
   const location = useLocation()
 
-  const from = location.state?.from?.pathname || '/dashboard'
+  const from = location.state?.from?.pathname || '/admin/dashboard'
 
   const handleSubmit = async (e) => {
     e.preventDefault()
@@ -20,7 +20,7 @@ export default function LoginPage() {
       await login(email, password)
       navigate(from, { replace: true })
     } catch (error) {
-      setErr(error.response?.data?.detail || error.message || 'Geçersiz e-posta veya şifre')
+      setErr(error.response?.data?.detail || error.response?.data?.message || error.message || 'Geçersiz e-posta veya şifre')
     }
   }
 
