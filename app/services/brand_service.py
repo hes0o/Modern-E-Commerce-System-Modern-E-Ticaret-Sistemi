@@ -1,3 +1,4 @@
+from typing import Optional
 from datetime import timezone, datetime
 
 from sqlmodel import Session, select
