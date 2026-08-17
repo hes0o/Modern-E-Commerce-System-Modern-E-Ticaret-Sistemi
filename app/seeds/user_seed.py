@@ -24,6 +24,12 @@ DEFAULT_USERS = [
         "password": "Emp123!",
         "role_name": "personnel",
     },
+    {
+        "name": "Müşteri",
+        "email": "customer@example.com",
+        "password": "Customer123!",
+        "role_name": "customer",
+    },
 ]
 
 
