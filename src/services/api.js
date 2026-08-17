@@ -3,8 +3,6 @@ import { API_BASE_URL } from '@/utils/constants'
 
 /**
  * Axios instance pre-configured for the REST API.
- * When connecting to a real Python backend, only this file and
- * individual service files need to change — no page components.
  */
 const api = axios.create({
   baseURL: API_BASE_URL,
@@ -37,9 +35,18 @@ api.interceptors.request.use(
 api.interceptors.response.use(
   (response) => response,
   (error) => {
-    if (error.response?.status === 401) {
+    const originalRequest = error.config
+
+    // Do not redirect on 401 for auth endpoints (login, register)
+    const isAuthRequest =
+      originalRequest.url.includes('/api/auth/login') ||
+      originalRequest.url.includes('/api/auth/register')
+
+    if (error.response?.status === 401 && !isAuthRequest) {
       localStorage.removeItem('shop_admin_user')
-      window.location.href = '/login'
+      // Redirect to correct login based on which section of the app we're in
+      const isAdminPage = window.location.pathname.startsWith('/admin')
+      window.location.href = isAdminPage ? '/admin' : '/login'
     }
     return Promise.reject(error)
   }

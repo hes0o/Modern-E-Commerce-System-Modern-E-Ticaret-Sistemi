@@ -98,7 +98,7 @@ export default function ProductListPage() {
       header: 'İşlemler',
       render: (row) => (
         <div className="flex items-center gap-2">
-          <Link to={`/products/${row.id}/edit`} className="p-1.5 text-slate-500 hover:text-brand-600 hover:bg-slate-100 rounded-lg transition-colors">
+          <Link to={`/admin/products/${row.id}/edit`} className="p-1.5 text-slate-500 hover:text-brand-600 hover:bg-slate-100 rounded-lg transition-colors">
             <Edit2 size={16} />
           </Link>
           <button
@@ -119,7 +119,7 @@ export default function ProductListPage() {
           <h1 className="page-title">Ürün Yönetimi</h1>
           <p className="page-subtitle">Ürün kataloğunu, fiyatları ve varyantları yönetin.</p>
         </div>
-        <Link to="/products/new" className="btn btn-primary">
+        <Link to="/admin/products/new" className="btn btn-primary">
           <Plus size={16} />
           Ürün Ekle
         </Link>

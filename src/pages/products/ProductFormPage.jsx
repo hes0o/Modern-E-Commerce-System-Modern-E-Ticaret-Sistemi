@@ -37,7 +37,7 @@ export default function ProductFormPage() {
       } else {
         await productService.create(formData)
       }
-      navigate('/products')
+      navigate('/admin/products')
     } catch (err) {
       console.error(err)
     } finally {
@@ -56,7 +56,7 @@ export default function ProductFormPage() {
   return (
     <div className="space-y-6">
       <div className="flex items-center gap-4">
-        <Link to="/products" className="btn btn-secondary btn-sm p-2">
+        <Link to="/admin/products" className="btn btn-secondary btn-sm p-2">
           <ArrowLeft size={16} />
         </Link>
         <div>
