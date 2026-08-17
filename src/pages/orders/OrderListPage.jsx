@@ -61,7 +61,7 @@ export default function OrderListPage() {
     {
       header: 'İşlem',
       render: (row) => (
-        <Link to={`/orders/${row.id}`} className="btn btn-secondary btn-sm flex items-center gap-1">
+        <Link to={`/admin/orders/${row.id}`} className="btn btn-secondary btn-sm flex items-center gap-1">
           <Eye size={14} /> Görüntüle
         </Link>
       ),

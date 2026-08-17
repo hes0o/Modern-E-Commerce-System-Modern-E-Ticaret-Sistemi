@@ -71,12 +71,12 @@ export default function DashboardPage() {
 
         <div className="flex items-center gap-3">
 
-          <Link to="/products/new" className="btn btn-primary">
+          <Link to="/admin/products/new" className="btn btn-primary">
             <Plus size={15} />
             Yeni Ürün Ekle
           </Link>
 
-          <Link to="/reports" className="btn btn-secondary">
+          <Link to="/admin/reports" className="btn btn-secondary">
             <Download size={15} />
             Rapor Al
           </Link>
@@ -120,7 +120,7 @@ export default function DashboardPage() {
           icon={AlertTriangle}
           color="red"
           subtitle="Yenilenmesi gereken ürünler"
-          onClick={() => navigate('/stock')}
+          onClick={() => navigate('/admin/stock')}
         />
       </div>
 
@@ -163,7 +163,7 @@ export default function DashboardPage() {
             <h3 className="text-sm font-bold text-slate-900 tracking-tight">Son Siparişler</h3>
             <p className="text-[11px] text-slate-400">Sisteme giren en son verilmiş siparişler</p>
           </div>
-          <Link to="/orders" className="text-xs font-semibold text-indigo-600 hover:text-indigo-700 flex items-center gap-1 hover:underline">
+          <Link to="/admin/orders" className="text-xs font-semibold text-indigo-600 hover:text-indigo-700 flex items-center gap-1 hover:underline">
             Tümünü Gör <ArrowRight size={14} />
           </Link>
         </div>

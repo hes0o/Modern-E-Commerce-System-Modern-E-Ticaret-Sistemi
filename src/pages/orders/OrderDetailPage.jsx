@@ -151,7 +151,7 @@ export default function OrderDetailPage() {
       <div className="text-center py-16 space-y-4">
         <Package size={48} className="mx-auto text-slate-300" />
         <p className="text-slate-500 font-medium">Sipariş bulunamadı.</p>
-        <Link to="/orders" className="btn btn-secondary">Siparişlere Dön</Link>
+        <Link to="/admin/orders" className="btn btn-secondary">Siparişlere Dön</Link>
       </div>
     )
   }

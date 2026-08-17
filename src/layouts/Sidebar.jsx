@@ -18,13 +18,13 @@ const navSections = [
       {
         id: 'dashboard',
         label: 'Kontrol Paneli',
-        path: '/dashboard',
+        path: '/admin/dashboard',
         icon: 'LayoutDashboard'
       },
       {
         id: 'notifications',
         label: 'Bildirimler',
-        path: '/notifications',
+        path: '/admin/notifications',
         icon: 'Bell'
       },
     ]
@@ -37,9 +37,9 @@ const navSections = [
         label: 'Ürün Yönetimi',
         icon: 'Package',
         children: [
-          { label: 'Tüm Ürünler', path: '/products', icon: List },
-          { label: 'Yeni Ürün Ekle', path: '/products/new', icon: PlusCircle },
-          { label: 'Kategori & Markalar', path: '/products/categories-brands', icon: Tag },
+          { label: 'Tüm Ürünler', path: '/admin/products', icon: List },
+          { label: 'Yeni Ürün Ekle', path: '/admin/products/new', icon: PlusCircle },
+          { label: 'Kategori & Markalar', path: '/admin/products/categories-brands', icon: Tag },
         ],
       },
       {
@@ -49,46 +49,46 @@ const navSections = [
         children: [
           {
             label: 'Tüm Siparişler',
-            path: '/orders',
+            path: '/admin/orders',
             icon: List,
           },
           {
             label: 'Onay Bekleyenler',
-            path: '/orders/pending',
+            path: '/admin/orders/pending',
             icon: CircleCheckBig,
           },
           {
             label: 'Hazırlanıyor',
-            path: '/orders/preparing',
+            path: '/admin/orders/preparing',
             icon: Package,
           },
           {
             label: 'Kargoda',
-            path: '/orders/shipping',
+            path: '/admin/orders/shipping',
             icon: Truck,
           },
           {
             label: 'Teslim Edildi',
-            path: '/orders/delivered',
+            path: '/admin/orders/delivered',
             icon: CheckCheck,
           },
           {
             label: 'İptal Edilenler',
-            path: '/orders/cancelled',
+            path: '/admin/orders/cancelled',
             icon: CircleX,
           },
         ],
       },
-      { id: 'stock', label: 'Stok Yönetimi', path: '/stock', icon: 'Warehouse' },
+      { id: 'stock', label: 'Stok Yönetimi', path: '/admin/stock', icon: 'Warehouse' },
     ]
   },
   {
     title: 'Yönetim & Analiz',
     items: [
-      { id: 'users', label: 'Kullanıcılar', path: '/users', icon: 'Users' },
-      { id: 'roles', label: 'Roller & İzinler', path: '/roles', icon: 'Shield' },
-      { id: 'reports', label: 'Raporlar & Analizler', path: '/reports', icon: 'BarChart2' },
-      { id: 'settings', label: 'Ayarlar', path: '/settings', icon: 'Settings' },
+      { id: 'users', label: 'Kullanıcılar', path: '/admin/users', icon: 'Users' },
+      { id: 'roles', label: 'Roller & İzinler', path: '/admin/roles', icon: 'Shield' },
+      { id: 'reports', label: 'Raporlar & Analizler', path: '/admin/reports', icon: 'BarChart2' },
+      { id: 'settings', label: 'Ayarlar', path: '/admin/settings', icon: 'Settings' },
     ]
   }
 ]

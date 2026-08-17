@@ -7,24 +7,24 @@ import GlobalSearch from '@/components/common/GlobalSearch'
 import api from '@/services/api'
 
 const PAGE_TITLES = {
-  '/dashboard': 'Kontrol Paneli',
-  '/products': 'Ürün Yönetimi',
-  '/products/new': 'Yeni Ürün Ekle',
-  '/products/categories': 'Kategori Yönetimi',
-  '/products/brands': 'Marka Yönetimi',
-  '/orders': 'Sipariş Yönetimi',
-  '/orders/pending': 'Onay Bekleyenler',
-  '/orders/preparing': 'Hazırlanan Siparişler',
-  '/orders/shipping': 'Kargodaki Siparişler',
-  '/orders/delivered': 'Teslim Edilenler',
-  '/orders/cancelled': 'İptal Edilenler',
-  '/stock': 'Stok Yönetimi',
-  '/users': 'Kullanıcı Yönetimi',
-  '/roles': 'Roller & İzinler',
-  '/reports': 'Raporlar & Analizler',
-  '/settings': 'Mağaza Ayarları',
-  '/notifications': 'Bildirimler',
-  '/profile': 'Kullanıcı Profili',
+  '/admin/dashboard': 'Kontrol Paneli',
+  '/admin/products': 'Ürün Yönetimi',
+  '/admin/products/new': 'Yeni Ürün Ekle',
+  '/admin/products/categories': 'Kategori Yönetimi',
+  '/admin/products/brands': 'Marka Yönetimi',
+  '/admin/orders': 'Sipariş Yönetimi',
+  '/admin/orders/pending': 'Onay Bekleyenler',
+  '/admin/orders/preparing': 'Hazırlanan Siparişler',
+  '/admin/orders/shipping': 'Kargodaki Siparişler',
+  '/admin/orders/delivered': 'Teslim Edilenler',
+  '/admin/orders/cancelled': 'İptal Edilenler',
+  '/admin/stock': 'Stok Yönetimi',
+  '/admin/users': 'Kullanıcı Yönetimi',
+  '/admin/roles': 'Roller & İzinler',
+  '/admin/reports': 'Raporlar & Analizler',
+  '/admin/settings': 'Mağaza Ayarları',
+  '/admin/notifications': 'Bildirimler',
+  '/admin/profile': 'Kullanıcı Profili',
 }
 
 export default function Navbar({ onMenuClick }) {
@@ -80,7 +80,7 @@ export default function Navbar({ onMenuClick }) {
 
   const handleLogout = () => {
     logout()
-    navigate('/login')
+    navigate('/admin')
   }
 
   const getRoleLabel = (role) => {
@@ -161,7 +161,7 @@ export default function Navbar({ onMenuClick }) {
                     notifications.slice(0, 5).map((n) => (
                       <div
                         key={n.id}
-                        onClick={() => { navigate('/notifications'); setNotificationsOpen(false) }}
+                        onClick={() => { navigate('/admin/notifications'); setNotificationsOpen(false) }}
                         className={`px-4 py-2.5 hover:bg-slate-50 transition-colors cursor-pointer ${!n.is_read ? 'bg-indigo-50/30 font-semibold' : ''}`}
                       >
                         <p className="font-semibold text-slate-800 truncate">{n.title}</p>
@@ -172,7 +172,7 @@ export default function Navbar({ onMenuClick }) {
                 </div>
                 <div className="border-t border-slate-100 mt-1">
                   <button
-                    onClick={() => { navigate('/notifications'); setNotificationsOpen(false) }}
+                    onClick={() => { navigate('/admin/notifications'); setNotificationsOpen(false) }}
                     className="w-full py-2 text-xs font-semibold text-indigo-600 hover:bg-indigo-50 transition-colors"
                   >
                     Tüm Bildirimleri Gör
@@ -208,7 +208,7 @@ export default function Navbar({ onMenuClick }) {
                 </div>
                 <div className="py-1">
                   <Link
-                    to="/profile"
+                    to="/admin/profile"
                     onClick={() => setDropdownOpen(false)}
                     className="flex items-center gap-2.5 px-4 py-2 text-xs font-medium text-slate-700 hover:bg-slate-50 transition-colors"
                   >
