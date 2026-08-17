@@ -1,4 +1,4 @@
-from sqlalchemy import func, or_
+from sqlalchemy import and_, func, or_
 from sqlmodel import Session, col, select
 
 from app.models.enums import ProductStatus
@@ -15,6 +15,7 @@ def get_products(
     brand_id: int | None = None,
     color: str | None = None,
     size: str | None = None,
+    stock_status: str | None = None,
     min_price: float | None = None,
     max_price: float | None = None,
     is_new: bool | None = None,
@@ -71,6 +72,57 @@ def get_products(
         count_statement = count_statement.where(
             variant_condition,
         )
+
+    if stock_status:
+        non_variant_stock_condition = None
+        variant_stock_condition = None
+
+        if stock_status == "out":
+            non_variant_stock_condition = and_(
+                col(Product.has_variants).is_(False),
+                col(Product.stock) == 0,
+            )
+            variant_stock_condition = and_(
+                col(Product.has_variants).is_(True),
+                select(ProductVariant.id)
+                .where(
+                    ProductVariant.product_id == Product.id,
+                    col(ProductVariant.stock) == 0,
+                )
+                .exists(),
+            )
+
+        elif stock_status == "low":
+            non_variant_stock_condition = and_(
+                col(Product.has_variants).is_(False),
+                col(Product.stock).is_not(None),
+                col(Product.stock) > 0,
+                col(Product.min_stock_level).is_not(None),
+                col(Product.stock) <= col(Product.min_stock_level),
+            )
+            variant_stock_condition = and_(
+                col(Product.has_variants).is_(True),
+                select(ProductVariant.id)
+                .where(
+                    ProductVariant.product_id == Product.id,
+                    col(ProductVariant.stock) > 0,
+                    col(ProductVariant.min_stock_level).is_not(None),
+                    col(ProductVariant.stock)
+                    <= col(ProductVariant.min_stock_level),
+                )
+                .exists(),
+            )
+
+        if (
+            non_variant_stock_condition is not None
+            and variant_stock_condition is not None
+        ):
+            stock_condition = or_(
+                non_variant_stock_condition,
+                variant_stock_condition,
+            )
+            statement = statement.where(stock_condition)
+            count_statement = count_statement.where(stock_condition)
 
     effective_price = func.coalesce(
         Product.discount_price,

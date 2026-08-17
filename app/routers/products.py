@@ -5,6 +5,7 @@ from sqlmodel import Session
 
 from app.core.dependencies import require_permission
 from app.database import get_session
+from app.models.enums import ProductStatus
 from app.models.user import User
 from app.schemas.common import ApiResponse
 from app.schemas.product import (
@@ -103,6 +104,73 @@ def get_product_list(
         success=True,
         data=result,
         message="Ürünler getirildi.",
+    )
+
+@router.get(
+    "/admin",
+    response_model=ApiResponse[ProductListResponse],
+)
+def get_admin_product_list(
+    session: Annotated[Session, Depends(get_session)],
+    _admin_user: Annotated[
+        User,
+        Depends(require_permission("product.read")),
+    ],
+    page: Annotated[int, Query(ge=1)] = 1,
+    page_size: Annotated[int, Query(ge=1, le=100)] = 20,
+    search: Annotated[
+        str | None,
+        Query(min_length=1, max_length=200),
+    ] = None,
+    category_id: Annotated[
+        int | None,
+        Query(gt=0),
+    ] = None,
+    brand_id: Annotated[
+        int | None,
+        Query(gt=0),
+    ] = None,
+    color: Annotated[
+        str | None,
+        Query(min_length=1, max_length=50),
+    ] = None,
+    size: Annotated[
+        str | None,
+        Query(min_length=1, max_length=30),
+    ] = None,
+    status: ProductStatus | None = None,
+    stock_status: Literal["low", "out"] | None = None,
+    sort: Literal[
+        "newest",
+        "price_asc",
+        "price_desc",
+        "name_asc",
+    ] = "newest",
+) -> ApiResponse[ProductListResponse]:
+    result = list_products(
+        session,
+        page=page,
+        page_size=page_size,
+        search=search,
+        category_id=category_id,
+        brand_id=brand_id,
+        color=color,
+        size=size,
+        min_price=None,
+        max_price=None,
+        is_new=None,
+        is_bestseller=None,
+        is_featured=None,
+        is_campaign=None,
+        sort=sort,
+        status=status,
+        stock_status=stock_status,
+    )
+
+    return ApiResponse(
+        success=True,
+        data=result,
+        message="Admin ürünleri getirildi.",
     )
 
 @router.get(

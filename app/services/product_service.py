@@ -159,6 +159,8 @@ def list_products(
     is_featured: bool | None,
     is_campaign: bool | None,
     sort: str,
+    status: ProductStatus | None = ProductStatus.PUBLISHED,
+    stock_status: str | None = None,
 ) -> ProductListResponse:
     if (
         min_price is not None
@@ -177,6 +179,7 @@ def list_products(
         brand_id=brand_id,
         color=color,
         size=size,
+        stock_status=stock_status,
         min_price=min_price,
         max_price=max_price,
         is_new=is_new,
@@ -184,7 +187,7 @@ def list_products(
         is_featured=is_featured,
         is_campaign=is_campaign,
         sort=sort,
-        status=ProductStatus.PUBLISHED,
+        status=status,
     )
 
     total_pages = (
