@@ -40,7 +40,8 @@ export const orderService = {
       tax: raw.vat_total || 0,
       shipping: 0,
       total: raw.grand_total || 0,
-      notes: raw.customer_note || raw.admin_note || '',
+      customerNote: raw.customer_note || '',
+      adminNote: raw.admin_note || '',
       trackingNo: raw.shipping_tracking_number || null,
       shippingCompany: raw.shipping_tracking_number ? 'Kargo Firması' : null,
       items,
@@ -75,6 +76,14 @@ export const orderService = {
 
   async updateStatus(id, status, note = '') {
     const res = await api.patch(`/api/orders/admin/${id}/status`, { status, note })
+    return this.formatOrder(res.data.data)
+  },
+
+  async updateAdminDetails(id, { adminNote, trackingNo } = {}) {
+    const payload = {}
+    if (adminNote !== undefined) payload.admin_note = adminNote
+    if (trackingNo !== undefined) payload.shipping_tracking_number = trackingNo
+    const res = await api.patch(`/api/orders/admin/${id}`, payload)
     return this.formatOrder(res.data.data)
   },
 
