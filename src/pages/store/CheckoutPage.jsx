@@ -40,13 +40,24 @@ export default function CheckoutPage() {
   }, [isAuthenticated])
 
   async function handleSaveAddress() {
+    if (!newAddr.title || newAddr.title.length < 2) return toast.error('Title must be at least 2 characters')
+    if (!newAddr.recipient_name || newAddr.recipient_name.length < 2) return toast.error('Name must be at least 2 characters')
+    if (!newAddr.phone || newAddr.phone.length < 10) return toast.error('Phone must be at least 10 characters')
+    if (!newAddr.city || newAddr.city.length < 2) return toast.error('City is required')
+    if (!newAddr.district || newAddr.district.length < 2) return toast.error('District is required')
+    if (!newAddr.full_address || newAddr.full_address.length < 5) return toast.error('Full address must be at least 5 characters')
+
     try {
       const addr = await addressService.create(newAddr)
       setAddresses(prev => [...prev, addr])
       setSelectedAddress(addr.id)
       setShowNewAddr(false)
+      setNewAddr({ title: '', recipient_name: '', phone: '', city: '', district: '', full_address: '', postal_code: '', is_default: false })
       toast.success('Address saved!')
-    } catch { toast.error('Could not save address') }
+    } catch (err) {
+      const msg = err.response?.data?.errors?.[0]?.message || err.response?.data?.message || 'Could not save address'
+      toast.error('Error: ' + msg)
+    }
   }
 
   async function handlePlaceOrder() {
