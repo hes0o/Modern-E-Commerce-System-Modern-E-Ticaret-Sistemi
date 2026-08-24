@@ -15,6 +15,10 @@ def get_products(
     search: Optional[str] = None,
     category_id: Optional[int] = None,
     status: Optional[ProductStatus] = ProductStatus.PUBLISHED,
+    brand_id: Optional[int] = None,
+    price_min: Optional[float] = None,
+    price_max: Optional[float] = None,
+    sort_by: Optional[str] = None,
 ) -> tuple[list[Product], int]:
     statement = select(Product)
     count_statement = select(func.count()).select_from(Product)
@@ -45,11 +49,29 @@ def get_products(
             search_condition,
         )
 
+    if brand_id is not None:
+        brand_condition = col(Product.brand_id) == brand_id
+        statement = statement.where(brand_condition)
+        count_statement = count_statement.where(brand_condition)
+
+    if price_min is not None:
+        statement = statement.where(col(Product.price) >= price_min)
+        count_statement = count_statement.where(col(Product.price) >= price_min)
+
+    if price_max is not None:
+        statement = statement.where(col(Product.price) <= price_max)
+        count_statement = count_statement.where(col(Product.price) <= price_max)
+
+    if sort_by == 'price_asc':
+        order_col = col(Product.price).asc()
+    elif sort_by == 'price_desc':
+        order_col = col(Product.price).desc()
+    else:
+        order_col = col(Product.created_at).desc()
+
     statement = (
         statement.options(selectinload(Product.variants))
-        .order_by(
-            col(Product.created_at).desc(),
-        )
+        .order_by(order_col)
         .offset((page - 1) * page_size)
         .limit(page_size)
     )

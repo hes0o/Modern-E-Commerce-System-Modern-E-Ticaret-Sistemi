@@ -155,6 +155,10 @@ def list_products(
     search: Optional[str],
     category_id: Optional[int],
     status: Optional[str] = None,
+    brand_id: Optional[int] = None,
+    price_min: Optional[float] = None,
+    price_max: Optional[float] = None,
+    sort_by: Optional[str] = None,
 ) -> ProductListResponse:
     enum_status = None
     if status:
@@ -170,6 +174,10 @@ def list_products(
         search=search,
         category_id=category_id,
         status=enum_status,
+        brand_id=brand_id,
+        price_min=price_min,
+        price_max=price_max,
+        sort_by=sort_by,
     )
 
     total_pages = (
