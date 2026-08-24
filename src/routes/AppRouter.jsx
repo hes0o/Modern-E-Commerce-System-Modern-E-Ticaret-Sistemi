@@ -20,6 +20,7 @@ import CustomerLoginPage from '@/pages/store/CustomerLoginPage'
 import AccountPage from '@/pages/store/AccountPage'
 import ProfilePage from '@/pages/store/ProfilePage'
 import OrderHistoryPage from '@/pages/store/OrderHistoryPage'
+import OrderDetailCustomerPage from '@/pages/store/OrderDetailCustomerPage'
 import FavoritesPage from '@/pages/store/FavoritesPage'
 import AddressesPage from '@/pages/store/AddressesPage'
 
@@ -75,6 +76,7 @@ export default function AppRouter() {
             <Route path="account" element={<CustomerRoute><AccountPage /></CustomerRoute>}>
               <Route index element={<ProfilePage />} />
               <Route path="orders" element={<OrderHistoryPage />} />
+              <Route path="orders/:id" element={<OrderDetailCustomerPage />} />
               <Route path="favorites" element={<FavoritesPage />} />
               <Route path="addresses" element={<AddressesPage />} />
             </Route>

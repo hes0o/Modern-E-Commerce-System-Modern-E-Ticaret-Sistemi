@@ -4,11 +4,12 @@ import { Package, ChevronRight, AlertCircle } from 'lucide-react'
 import api from '@/services/api'
 
 const STATUS_STYLES = {
-  pending: 'bg-yellow-100 text-yellow-700',
-  confirmed: 'bg-blue-100 text-blue-700',
+  pending:   'bg-yellow-100 text-yellow-700',
+  confirmed: 'bg-teal-100 text-teal-700',
   preparing: 'bg-orange-100 text-orange-700',
-  shipped: 'bg-indigo-100 text-indigo-700',
+  shipped:   'bg-indigo-100 text-indigo-700',
   completed: 'bg-emerald-100 text-emerald-700',
+  delivered: 'bg-emerald-100 text-emerald-700',
   cancelled: 'bg-red-100 text-red-700',
 }
 
@@ -52,14 +53,18 @@ export default function OrderHistoryPage() {
       ) : (
         <div className="space-y-3">
           {orders.map(order => (
-            <div key={order.id} className="bg-white rounded-2xl border border-gray-100 shadow-sm p-4 hover:border-indigo-200 transition-all">
+            <Link
+              key={order.id}
+              to={`/account/orders/${order.id}`}
+              className="block bg-white rounded-2xl border border-gray-100 shadow-sm p-4 hover:border-indigo-200 hover:shadow-md transition-all"
+            >
               <div className="flex items-center justify-between gap-4">
                 <div className="flex items-center gap-3 min-w-0">
                   <div className="w-10 h-10 bg-indigo-50 rounded-xl flex items-center justify-center flex-shrink-0">
                     <Package size={18} className="text-indigo-500" />
                   </div>
                   <div className="min-w-0">
-                    <p className="text-sm font-bold text-slate-900">Order #{order.id}</p>
+                    <p className="text-sm font-bold text-slate-900">Sipariş #{order.id}</p>
                     <p className="text-xs text-gray-400">{formatDate(order.created_at || order.ordered_at)}</p>
                   </div>
                 </div>
@@ -67,11 +72,11 @@ export default function OrderHistoryPage() {
                   <span className={`text-[11px] font-bold px-2.5 py-1 rounded-full capitalize ${STATUS_STYLES[order.status] || 'bg-gray-100 text-gray-600'}`}>
                     {order.status}
                   </span>
-                  <p className="text-sm font-black text-slate-900 whitespace-nowrap">{formatPrice(order.total_price || order.total)}</p>
-                  <ChevronRight size={15} className="text-gray-300" />
+                  <p className="text-sm font-black text-slate-900 whitespace-nowrap">{formatPrice(order.total_price || order.total || order.grand_total)}</p>
+                  <ChevronRight size={15} className="text-gray-300 flex-shrink-0" />
                 </div>
               </div>
-            </div>
+            </Link>
           ))}
         </div>
       )}
