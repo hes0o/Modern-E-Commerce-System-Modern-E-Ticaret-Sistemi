@@ -5,7 +5,8 @@ import Badge from '@/components/common/Badge'
 import ConfirmDialog from '@/components/common/ConfirmDialog'
 import { productService } from '@/services/productService'
 import { formatCurrency } from '@/utils/formatters'
-import { Plus, Edit2, Trash2 } from 'lucide-react'
+import { Plus, Edit2, Trash2, Eye, EyeOff } from 'lucide-react'
+import toast from 'react-hot-toast'
 
 export default function ProductListPage() {
   const [products, setProducts] = useState([])
@@ -46,6 +47,16 @@ export default function ProductListPage() {
       console.error(err)
     } finally {
       setDeleting(false)
+    }
+  }
+
+  const handleToggleStatus = async (row) => {
+    try {
+      const updated = await productService.toggleStatus(row.id, row.status)
+      setProducts(prev => prev.map(p => p.id === row.id ? { ...p, status: updated.status } : p))
+      toast.success(`"${row.name}" ${updated.status === 'active' ? 'aktif' : 'pasif'} yapıldı.`)
+    } catch {
+      toast.error('Durum güncellenemedi.')
     }
   }
 
@@ -98,6 +109,17 @@ export default function ProductListPage() {
       header: 'İşlemler',
       render: (row) => (
         <div className="flex items-center gap-2">
+          <button
+            onClick={() => handleToggleStatus(row)}
+            title={row.status === 'active' ? 'Pasife Al' : 'Aktif Yap'}
+            className={`p-1.5 rounded-lg transition-colors ${
+              row.status === 'active'
+                ? 'text-emerald-600 hover:bg-emerald-50'
+                : 'text-slate-400 hover:bg-slate-100'
+            }`}
+          >
+            {row.status === 'active' ? <Eye size={16} /> : <EyeOff size={16} />}
+          </button>
           <Link to={`/admin/products/${row.id}/edit`} className="p-1.5 text-slate-500 hover:text-brand-600 hover:bg-slate-100 rounded-lg transition-colors">
             <Edit2 size={16} />
           </Link>

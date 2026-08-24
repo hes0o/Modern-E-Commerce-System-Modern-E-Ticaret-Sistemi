@@ -33,6 +33,12 @@ export const productService = {
     return res.data.data
   },
 
+  async toggleStatus(id, currentStatus) {
+    const newStatus = currentStatus === 'active' ? 'inactive' : 'active'
+    const res = await api.put(`/api/products/${id}`, { status: newStatus })
+    return res.data.data
+  },
+
   async delete(id) {
     const res = await api.delete(`/api/products/${id}`)
     return res.data.data
