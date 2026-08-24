@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react'
 import SalesChart from '@/components/charts/SalesChart'
-import { Download, Calendar, ChevronDown, TrendingUp, ShoppingBag, DollarSign } from 'lucide-react'
+import { Download, Calendar, ChevronDown, TrendingUp, ShoppingBag, DollarSign, BarChart2 } from 'lucide-react'
 import api from '@/services/api'
 import { formatCurrency } from '@/utils/formatters'
 
@@ -10,6 +10,7 @@ export default function ReportsPage() {
   const [salesData, setSalesData] = useState([])
   const [summary, setSummary] = useState(null)
   const [loading, setLoading] = useState(true)
+  const [statusCounts, setStatusCounts] = useState({})
 
   const dateOptions = [
     { value: '7days', label: 'Son 7 Gün', period: '7D' },
@@ -32,9 +33,10 @@ export default function ReportsPage() {
         else past.setFullYear(today.getFullYear() - 1)
         const dateFrom = past.toISOString().split('T')[0]
 
-        const [chartRes, summaryRes] = await Promise.allSettled([
+        const [chartRes, summaryRes, dashRes] = await Promise.allSettled([
           api.get('/api/admin/reports/monthly-sales', { params: { period: opt?.period || '1M' } }),
           api.get('/api/admin/reports/sales', { params: { date_from: dateFrom, date_to: dateTo } }),
+          api.get('/api/admin/dashboard'),
         ])
 
         if (chartRes.status === 'fulfilled') {
@@ -44,6 +46,10 @@ export default function ReportsPage() {
 
         if (summaryRes.status === 'fulfilled') {
           setSummary(summaryRes.value.data?.data)
+        }
+
+        if (dashRes.status === 'fulfilled') {
+          setStatusCounts(dashRes.value.data?.data?.statusCounts || {})
         }
       } catch (err) {
         console.error('Report load error:', err)
@@ -168,6 +174,42 @@ export default function ReportsPage() {
           <SalesChart data={salesData} />
         )}
       </div>
+
+      {/* Order Status Breakdown */}
+      {Object.keys(statusCounts).length > 0 && (() => {
+        const STATUS_LABELS = {
+          pending:    { label: 'Beklemede',     color: 'bg-yellow-400' },
+          confirmed:  { label: 'Onaylandı',     color: 'bg-teal-400' },
+          preparing:  { label: 'Hazırlanıyor',  color: 'bg-blue-400' },
+          shipped:    { label: 'Kargoda',       color: 'bg-purple-400' },
+          delivered:  { label: 'Teslim Edildi', color: 'bg-green-400' },
+          completed:  { label: 'Tamamlandı',    color: 'bg-emerald-500' },
+          cancelled:  { label: 'İptal Edildi',  color: 'bg-red-400' },
+        }
+        const totalOrders = Object.values(statusCounts).reduce((a, b) => a + b, 0) || 1
+        return (
+          <div className="card p-6 space-y-4">
+            <h3 className="text-base font-bold text-slate-800 flex items-center gap-2">
+              <BarChart2 size={18} className="text-indigo-500" /> Sipariş Durum Dağılımı
+            </h3>
+            <div className="space-y-3">
+              {Object.entries(statusCounts).map(([status, count]) => {
+                const cfg = STATUS_LABELS[status] || { label: status, color: 'bg-gray-400' }
+                const pct = Math.round((count / totalOrders) * 100)
+                return (
+                  <div key={status} className="flex items-center gap-3">
+                    <span className="text-xs text-slate-500 w-28 flex-shrink-0">{cfg.label}</span>
+                    <div className="flex-1 bg-slate-100 rounded-full h-2.5 overflow-hidden">
+                      <div className={`h-full rounded-full ${cfg.color} transition-all duration-500`} style={{ width: `${pct}%` }} />
+                    </div>
+                    <span className="text-xs font-bold text-slate-700 w-12 text-right">{count} ({pct}%)</span>
+                  </div>
+                )
+              })}
+            </div>
+          </div>
+        )
+      })()}
     </div>
   )
 }
