@@ -12,13 +12,14 @@ import CargoLabelModal from './CargoLabelModal'
 
 const STATUS_CONFIG = {
   pending:    { label: 'Beklemede',     color: 'yellow',  icon: Clock },
-  processing: { label: 'Hazırlanıyor',  color: 'blue',    icon: Package },
-  shipped:    { label: 'Kargoda',       color: 'purple',  icon: Truck },
-  delivered:  { label: 'Teslim Edildi', color: 'green',   icon: CheckCircle2 },
-  cancelled:  { label: 'İptal Edildi',  color: 'red',     icon: XCircle },
+  confirmed:  { label: 'Onaylandı',    color: 'teal',    icon: CheckCircle2 },
+  processing: { label: 'Hazırlanıyor', color: 'blue',    icon: Package },
+  shipped:    { label: 'Kargoda',      color: 'purple',  icon: Truck },
+  delivered:  { label: 'Teslim Edildi',color: 'green',   icon: CheckCircle2 },
+  cancelled:  { label: 'İptal Edildi', color: 'red',     icon: XCircle },
 }
 
-const STATUS_PIPELINE = ['pending', 'processing', 'shipped', 'delivered']
+const STATUS_PIPELINE = ['pending', 'confirmed', 'processing', 'shipped', 'delivered']
 
 function StatusTimeline({ timeline, currentStatus }) {
   if (!timeline || timeline.length === 0) return null
@@ -69,9 +70,10 @@ function NextStatusActions({ order, onStatusChange, loading }) {
         className="btn btn-brand flex items-center gap-2"
       >
         <NextIcon size={15} />
+        {nextStatus === 'confirmed'  && 'Siparişi Onayla'}
         {nextStatus === 'processing' && 'Hazırlamaya Al'}
-        {nextStatus === 'shipped' && 'Kargoya Ver'}
-        {nextStatus === 'delivered' && 'Teslim Edildi Olarak İşaretle'}
+        {nextStatus === 'shipped'    && 'Kargoya Ver'}
+        {nextStatus === 'delivered'  && 'Teslim Edildi Olarak İşaretle'}
       </button>
     )
   }
@@ -103,6 +105,8 @@ export default function OrderDetailPage() {
   const [cargoModalOpen, setCargoModalOpen] = useState(false)
   const [adminNote, setAdminNote] = useState('')
   const [savingNote, setSavingNote] = useState(false)
+  const [trackingNo, setTrackingNo] = useState('')
+  const [savingTracking, setSavingTracking] = useState(false)
 
   useEffect(() => {
     async function loadOrder() {
@@ -110,6 +114,7 @@ export default function OrderDetailPage() {
         const res = await orderService.getById(id)
         setOrder(res)
         setAdminNote(res.adminNote || '')
+        setTrackingNo(res.trackingNo || '')
       } catch (err) {
         console.error(err)
         toast.error('Sipariş yüklenemedi.')
@@ -144,6 +149,19 @@ export default function OrderDetailPage() {
       toast.error('Not kaydedilemedi.')
     } finally {
       setSavingNote(false)
+    }
+  }
+
+  const handleSaveTracking = async () => {
+    setSavingTracking(true)
+    try {
+      const updated = await orderService.updateAdminDetails(id, { trackingNo })
+      setOrder(updated)
+      toast.success('Kargo takip numarası kaydedildi.')
+    } catch (err) {
+      toast.error('Takip numarası kaydedilemedi.')
+    } finally {
+      setSavingTracking(false)
     }
   }
 
@@ -267,30 +285,39 @@ export default function OrderDetailPage() {
             <StatusTimeline timeline={order.timeline} currentStatus={order.status} />
           </div>
 
-          {/* Shipping Info (if shipped/delivered) */}
-          {(order.status === 'shipped' || order.status === 'delivered') && order.shippingCompany && (
-            <div className="card p-6 space-y-4">
-              <h3 className="text-base font-bold text-slate-800 border-b border-slate-100 pb-3 flex items-center gap-2">
-                <Truck size={18} className="text-indigo-500" /> Kargo Bilgileri
-              </h3>
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                <div className="flex items-start gap-3">
-                  <Building2 size={18} className="text-slate-400 mt-1 flex-shrink-0" />
-                  <div>
-                    <p className="text-xs font-semibold text-slate-500">Kargo Şirketi</p>
-                    <p className="text-sm font-semibold text-slate-800 mt-0.5">{order.shippingCompany}</p>
-                  </div>
-                </div>
-                <div className="flex items-start gap-3">
-                  <Tag size={18} className="text-slate-400 mt-1 flex-shrink-0" />
-                  <div>
-                    <p className="text-xs font-semibold text-slate-500">Takip Numarası</p>
-                    <p className="text-sm font-mono font-bold text-indigo-700 mt-0.5">{order.trackingNo || '—'}</p>
-                  </div>
-                </div>
+          {/* Shipping / Tracking Info — always visible so admin can enter tracking */}
+          <div className="card p-6 space-y-4">
+            <h3 className="text-base font-bold text-slate-800 border-b border-slate-100 pb-3 flex items-center gap-2">
+              <Truck size={18} className="text-indigo-500" /> Kargo Bilgileri
+            </h3>
+            <div>
+              <label className="text-xs font-semibold text-slate-500 block mb-1.5">Takip Numarası</label>
+              <div className="flex items-center gap-2">
+                <input
+                  type="text"
+                  value={trackingNo}
+                  onChange={(e) => setTrackingNo(e.target.value)}
+                  placeholder="Örn. 1Z999AA10123456784"
+                  className="flex-1 rounded-lg border border-slate-200 bg-slate-50 px-3 py-2 text-sm font-mono text-slate-800 placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-indigo-400 focus:border-indigo-400 transition"
+                />
+                <button
+                  onClick={handleSaveTracking}
+                  disabled={savingTracking}
+                  className="btn btn-brand flex items-center gap-1.5 text-sm whitespace-nowrap"
+                >
+                  {savingTracking ? (
+                    <svg className="animate-spin w-4 h-4" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24"><circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"/><path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v8z"/></svg>
+                  ) : (
+                    <Tag size={14} />
+                  )}
+                  {savingTracking ? 'Kaydediliyor…' : 'Kaydet'}
+                </button>
               </div>
+              {order.trackingNo && (
+                <p className="text-xs text-slate-400 mt-1.5">Mevcut: <span className="font-mono text-indigo-600">{order.trackingNo}</span></p>
+              )}
             </div>
-          )}
+          </div>
 
           {/* Customer Note */}
           {order.customerNote && (
