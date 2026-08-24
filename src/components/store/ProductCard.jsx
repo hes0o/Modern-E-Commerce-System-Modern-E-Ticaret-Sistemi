@@ -45,6 +45,8 @@ export default function ProductCard({ product, onFavoriteToggle, isFavorited = f
 
   const price = product.base_price ?? product.price ?? 0
   const image = product.images?.[0]?.url || product.image_url
+  const stock = product.stock ?? Infinity  // Infinity = unknown, treat as in-stock
+  const isOutOfStock = stock === 0
 
   return (
     <Link to={`/shop/${product.id}`} className="group relative bg-white rounded-2xl shadow-sm hover:shadow-xl transition-all duration-300 overflow-hidden border border-gray-100 hover:border-indigo-200 flex flex-col">
@@ -60,11 +62,15 @@ export default function ProductCard({ product, onFavoriteToggle, isFavorited = f
 
         {/* Badges */}
         <div className="absolute top-2 left-2 flex flex-col gap-1">
-          {product.status === 'published' && price > 0 && (
-            <span className="bg-emerald-500 text-white text-[10px] font-bold px-2 py-0.5 rounded-full">In Stock</span>
+          {isOutOfStock ? (
+            <span className="bg-red-500 text-white text-[10px] font-bold px-2 py-0.5 rounded-full">Tükendi</span>
+          ) : (
+            product.status === 'published' && price > 0 && (
+              <span className="bg-emerald-500 text-white text-[10px] font-bold px-2 py-0.5 rounded-full">Stokta Var</span>
+            )
           )}
           {product.is_new && (
-            <span className="bg-indigo-600 text-white text-[10px] font-bold px-2 py-0.5 rounded-full">NEW</span>
+            <span className="bg-indigo-600 text-white text-[10px] font-bold px-2 py-0.5 rounded-full">YENİ</span>
           )}
         </div>
 
@@ -101,11 +107,15 @@ export default function ProductCard({ product, onFavoriteToggle, isFavorited = f
           </div>
           <button
             onClick={handleAddToCart}
-            disabled={adding}
-            className="flex items-center gap-1.5 px-3 py-1.5 bg-indigo-600 hover:bg-indigo-700 active:scale-95 text-white text-xs font-semibold rounded-xl transition-all disabled:opacity-60 shadow-sm shadow-indigo-200"
+            disabled={adding || isOutOfStock}
+            className={`flex items-center gap-1.5 px-3 py-1.5 text-white text-xs font-semibold rounded-xl transition-all shadow-sm ${
+              isOutOfStock
+                ? 'bg-gray-300 cursor-not-allowed'
+                : 'bg-indigo-600 hover:bg-indigo-700 active:scale-95 shadow-indigo-200 disabled:opacity-60'
+            }`}
           >
             <ShoppingCart size={13} />
-            {adding ? '...' : 'Add'}
+            {isOutOfStock ? 'Tükendi' : adding ? '...' : 'Ekle'}
           </button>
         </div>
       </div>

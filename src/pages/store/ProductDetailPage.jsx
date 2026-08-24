@@ -34,6 +34,10 @@ export default function ProductDetailPage() {
     load()
   }, [id])
 
+  // Derived stock state
+  const availableStock = selectedVariant?.stock ?? product?.stock ?? Infinity
+  const isOutOfStock = availableStock === 0
+
   async function handleAddToCart() {
     setAdding(true)
     try {
@@ -135,28 +139,44 @@ export default function ProductDetailPage() {
 
           {/* Quantity */}
           <div className="flex items-center gap-3 mb-5">
-            <p className="text-sm font-semibold text-slate-700">Qty</p>
+            <p className="text-sm font-semibold text-slate-700">Adet</p>
             <div className="flex items-center border border-gray-200 rounded-xl overflow-hidden bg-white">
               <button onClick={() => setQuantity(q => Math.max(1, q - 1))} className="px-3 py-2 text-gray-500 hover:bg-gray-50 transition-colors font-bold">−</button>
               <span className="px-4 py-2 text-sm font-semibold text-slate-900 border-x border-gray-100">{quantity}</span>
-              <button onClick={() => setQuantity(q => q + 1)} className="px-3 py-2 text-gray-500 hover:bg-gray-50 transition-colors font-bold">+</button>
+              <button
+                onClick={() => setQuantity(q => availableStock === Infinity ? q + 1 : Math.min(q + 1, availableStock))}
+                disabled={availableStock !== Infinity && quantity >= availableStock}
+                className="px-3 py-2 text-gray-500 hover:bg-gray-50 transition-colors font-bold disabled:opacity-40"
+              >+</button>
             </div>
+            {availableStock !== Infinity && availableStock > 0 && availableStock <= 10 && (
+              <span className="text-xs text-amber-600 font-semibold">Son {availableStock} ürün!</span>
+            )}
           </div>
 
           {/* CTA buttons */}
           <div className="flex gap-3 mb-6">
             <button
               onClick={handleAddToCart}
-              disabled={adding}
-              className="flex-1 flex items-center justify-center gap-2 py-3.5 bg-indigo-600 hover:bg-indigo-700 text-white font-bold rounded-2xl transition-all active:scale-[0.98] shadow-lg shadow-indigo-200 disabled:opacity-60 text-sm"
+              disabled={adding || isOutOfStock}
+              className={`flex-1 flex items-center justify-center gap-2 py-3.5 font-bold rounded-2xl transition-all active:scale-[0.98] text-sm ${
+                isOutOfStock
+                  ? 'bg-gray-200 text-gray-400 cursor-not-allowed'
+                  : 'bg-indigo-600 hover:bg-indigo-700 text-white shadow-lg shadow-indigo-200 disabled:opacity-60'
+              }`}
             >
               <ShoppingCart size={18} />
-              {adding ? 'Adding...' : 'Add to Cart'}
+              {isOutOfStock ? 'Stokta Yok' : adding ? 'Ekleniyor...' : 'Sepete Ekle'}
             </button>
             <button className="w-12 h-12 flex items-center justify-center border border-gray-200 rounded-2xl hover:border-rose-300 hover:bg-rose-50 transition-all group">
               <Heart size={18} className="text-gray-400 group-hover:text-rose-500 transition-colors" />
             </button>
           </div>
+          {isOutOfStock && (
+            <p className="-mt-3 mb-4 text-sm text-red-500 font-medium text-center">
+              Bu ürünün seçili seçeneği stokta bulunmamaktadır.
+            </p>
+          )}
 
           {/* Guarantees */}
           <div className="space-y-2 border-t border-gray-100 pt-5">
