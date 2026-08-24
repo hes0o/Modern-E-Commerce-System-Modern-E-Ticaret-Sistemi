@@ -65,6 +65,22 @@ def get_product_list(
         Optional[int],
         Query(gt=0),
     ] = None,
+    brand_id: Annotated[
+        Optional[int],
+        Query(gt=0),
+    ] = None,
+    price_min: Annotated[
+        Optional[float],
+        Query(ge=0),
+    ] = None,
+    price_max: Annotated[
+        Optional[float],
+        Query(ge=0),
+    ] = None,
+    sort_by: Annotated[
+        Optional[str],
+        Query(),
+    ] = None,
     status: Annotated[
         Optional[str],
         Query(),
@@ -77,6 +93,10 @@ def get_product_list(
         search=search,
         category_id=category_id,
         status=status,
+        brand_id=brand_id,
+        price_min=price_min,
+        price_max=price_max,
+        sort_by=sort_by,
     )
 
     return ApiResponse(
