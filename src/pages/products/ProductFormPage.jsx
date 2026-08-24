@@ -72,6 +72,7 @@ export default function ProductFormPage() {
         onSubmit={handleSubmit}
         loading={submitting}
         isEdit={isEdit}
+        productId={isEdit ? id : null}
       />
     </div>
   )
