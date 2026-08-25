@@ -9,7 +9,6 @@ const STATUS_STYLES = {
   preparing: 'bg-orange-100 text-orange-700',
   shipped:   'bg-indigo-100 text-indigo-700',
   completed: 'bg-emerald-100 text-emerald-700',
-  delivered: 'bg-emerald-100 text-emerald-700',
   cancelled: 'bg-red-100 text-red-700',
 }
 

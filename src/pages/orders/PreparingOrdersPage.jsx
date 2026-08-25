@@ -17,7 +17,7 @@ export default function PreparingOrdersPage() {
   const load = useCallback(async () => {
     setLoading(true)
     try {
-      const res = await orderService.getAll({ status: 'processing', limit: 100 })
+      const res = await orderService.getAll({ status: 'preparing', limit: 100 })
       setOrders(res.items)
     } catch {
       toast.error('Siparişler yüklenemedi.')

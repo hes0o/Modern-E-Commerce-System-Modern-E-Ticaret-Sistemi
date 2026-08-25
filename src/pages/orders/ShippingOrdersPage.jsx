@@ -35,7 +35,7 @@ export default function ShippingOrdersPage() {
   setUpdating(id)
 
   try {
-    await orderService.updateStatus(id, "delivered")
+    await orderService.updateStatus(id, "completed")
     toast.success("Sipariş teslim edildi.")
     await load()
   } catch {

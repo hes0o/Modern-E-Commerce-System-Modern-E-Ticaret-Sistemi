@@ -42,8 +42,8 @@ export default function PendingOrdersPage() {
   const handleApprove = async (id) => {
     setUpdating(id)
     try {
-      await orderService.updateStatus(id, 'processing')
-      toast.success('Sipariş onaylandı ve hazırlık aşamasına alındı.')
+      await orderService.updateStatus(id, 'confirmed')
+      toast.success('Sipariş onaylandı.')
       await load()
     } catch {
       toast.error('İşlem başarısız.')

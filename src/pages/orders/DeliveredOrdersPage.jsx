@@ -15,7 +15,7 @@ export default function DeliveredOrdersPage() {
 
     try {
       const res = await orderService.getAll({
-      status: "delivered",
+      status: "completed",
       limit: 100,
     })
 

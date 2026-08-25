@@ -10,7 +10,6 @@ const STATUS_CONFIG = {
   shipped:    { label: 'Kargoda',      color: 'bg-purple-100 text-purple-700', icon: Truck },
   completed:  { label: 'Tamamlandı',   color: 'bg-green-100 text-green-700',  icon: CheckCircle2 },
   cancelled:  { label: 'İptal Edildi', color: 'bg-red-100 text-red-700',      icon: XCircle },
-  delivered:  { label: 'Teslim Edildi','color': 'bg-green-100 text-green-700', icon: CheckCircle2 },
 }
 
 function formatPrice(p) {

@@ -1,4 +1,3 @@
-from typing import Optional, Union, Any
 from typing import Annotated
 
 from fastapi import APIRouter, Depends, Header, Query, status
@@ -14,6 +13,8 @@ from app.models.enums import OrderStatus
 from app.models.user import User
 from app.schemas.common import ApiResponse
 from app.schemas.order import (
+    AdminOrderListResponse,
+    AdminOrderResponse,
     OrderAdminUpdate,
     OrderCancel,
     OrderCreate,
@@ -47,11 +48,11 @@ def checkout(
     payload: OrderCreate,
     session: Annotated[Session, Depends(get_session)],
     current_user: Annotated[
-        Optional[User],
+        User | None,
         Depends(get_optional_current_user),
     ],
         session_token: Annotated[
-        Optional[str],
+        str | None,
         Header(
             alias="X-Session-Token",
             max_length=100,
@@ -144,7 +145,7 @@ def cancel_customer_order(
 
 @router.get(
     "/admin",
-    response_model=ApiResponse[OrderListResponse],
+    response_model=ApiResponse[AdminOrderListResponse],
 )
 def admin_orders(
     session: Annotated[Session, Depends(get_session)],
@@ -154,8 +155,8 @@ def admin_orders(
     ],
     page: Annotated[int, Query(ge=1)] = 1,
     page_size: Annotated[int, Query(ge=1, le=100)] = 20,
-    order_status: Optional[OrderStatus] = None,
-) -> ApiResponse[OrderListResponse]:
+    order_status: OrderStatus | None = None,
+) -> ApiResponse[AdminOrderListResponse]:
     orders = list_admin_orders(
         session,
         page=page,
@@ -172,7 +173,7 @@ def admin_orders(
 
 @router.get(
     "/admin/{order_id}",
-    response_model=ApiResponse[OrderResponse],
+    response_model=ApiResponse[AdminOrderResponse],
 )
 def admin_order_detail(
     order_id: int,
@@ -181,7 +182,7 @@ def admin_order_detail(
     User,
     Depends(require_permission("order.read")),
     ],
-) -> ApiResponse[OrderResponse]:
+) -> ApiResponse[AdminOrderResponse]:
     order = get_admin_order(
         session,
         order_id=order_id,
@@ -196,7 +197,7 @@ def admin_order_detail(
 
 @router.patch(
     "/admin/{order_id}/status",
-    response_model=ApiResponse[OrderResponse],
+    response_model=ApiResponse[AdminOrderResponse],
 )
 def update_admin_order_status(
     order_id: int,
@@ -206,7 +207,7 @@ def update_admin_order_status(
     User,
     Depends(require_permission("order.update_status")),
     ],
-) -> ApiResponse[OrderResponse]:
+) -> ApiResponse[AdminOrderResponse]:
     order = change_order_status(
         session,
         order_id=order_id,
@@ -223,7 +224,7 @@ def update_admin_order_status(
 
 @router.patch(
     "/admin/{order_id}",
-    response_model=ApiResponse[OrderResponse],
+    response_model=ApiResponse[AdminOrderResponse],
 )
 def update_admin_order_details(
     order_id: int,
@@ -238,7 +239,7 @@ def update_admin_order_details(
         )
     ),
     ],
-) -> ApiResponse[OrderResponse]:
+) -> ApiResponse[AdminOrderResponse]:
     order = update_order_admin_details(
         session,
         order_id=order_id,

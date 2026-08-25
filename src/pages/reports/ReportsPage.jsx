@@ -182,7 +182,6 @@ export default function ReportsPage() {
           confirmed:  { label: 'Onaylandı',     color: 'bg-teal-400' },
           preparing:  { label: 'Hazırlanıyor',  color: 'bg-blue-400' },
           shipped:    { label: 'Kargoda',       color: 'bg-purple-400' },
-          delivered:  { label: 'Teslim Edildi', color: 'bg-green-400' },
           completed:  { label: 'Tamamlandı',    color: 'bg-emerald-500' },
           cancelled:  { label: 'İptal Edildi',  color: 'bg-red-400' },
         }

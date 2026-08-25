@@ -8,9 +8,9 @@ import { Eye, Filter, ChevronDown } from 'lucide-react'
 
 const STATUS_LABELS = {
   pending: 'Beklemede',
-  processing: 'Hazırlanıyor',
+  preparing: 'Hazırlanıyor',
   shipped: 'Kargoda',
-  delivered: 'Teslim Edildi',
+  completed: 'Teslim Edildi',
   cancelled: 'İptal Edildi',
 }
 

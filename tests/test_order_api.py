@@ -2,6 +2,7 @@ from sqlmodel import Session
 
 from app.models.category import Category
 from app.models.enums import ProductStatus
+from app.models.order import Order
 from app.models.product import Product
 
 
@@ -114,6 +115,35 @@ def test_order_creation_and_cancellation_restores_stock(
     assert body["data"]["items"][0]["quantity"] == 2
 
     order_id = body["data"]["id"]
+
+    with Session(engine) as session:
+        saved_order = session.get(Order, order_id)
+        assert saved_order is not None
+        saved_order.admin_note = "Yalnızca yöneticinin görebileceği not"
+        session.add(saved_order)
+        session.commit()
+
+    customer_detail_response = client.get(
+        f"/api/orders/me/{order_id}",
+        headers=headers,
+    )
+
+    assert customer_detail_response.status_code == 200
+    assert (
+        "admin_note"
+        not in customer_detail_response.json()["data"]
+    )
+
+    customer_list_response = client.get(
+        "/api/orders/me",
+        headers=headers,
+    )
+
+    assert customer_list_response.status_code == 200
+    assert (
+        "admin_note"
+        not in customer_list_response.json()["data"]["items"][0]
+    )
 
     with Session(engine) as session:
         product_after_order = session.get(Product, product_id)

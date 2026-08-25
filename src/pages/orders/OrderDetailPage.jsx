@@ -13,13 +13,13 @@ import CargoLabelModal from './CargoLabelModal'
 const STATUS_CONFIG = {
   pending:    { label: 'Beklemede',     color: 'yellow',  icon: Clock },
   confirmed:  { label: 'Onaylandı',    color: 'teal',    icon: CheckCircle2 },
-  processing: { label: 'Hazırlanıyor', color: 'blue',    icon: Package },
+  preparing: { label: 'Hazırlanıyor', color: 'blue',    icon: Package },
   shipped:    { label: 'Kargoda',      color: 'purple',  icon: Truck },
-  delivered:  { label: 'Teslim Edildi',color: 'green',   icon: CheckCircle2 },
+  completed:  { label: 'Teslim Edildi',color: 'green',   icon: CheckCircle2 },
   cancelled:  { label: 'İptal Edildi', color: 'red',     icon: XCircle },
 }
 
-const STATUS_PIPELINE = ['pending', 'confirmed', 'processing', 'shipped', 'delivered']
+const STATUS_PIPELINE = ['pending', 'confirmed', 'preparing', 'shipped', 'completed']
 
 function StatusTimeline({ timeline, currentStatus }) {
   if (!timeline || timeline.length === 0) return null
@@ -52,7 +52,7 @@ function StatusTimeline({ timeline, currentStatus }) {
 }
 
 function NextStatusActions({ order, onStatusChange, loading }) {
-  if (order.status === 'delivered' || order.status === 'cancelled') return null
+  if (order.status === 'completed' || order.status === 'cancelled') return null
 
   const currentIdx = STATUS_PIPELINE.indexOf(order.status)
   const nextStatus = STATUS_PIPELINE[currentIdx + 1]
@@ -71,9 +71,9 @@ function NextStatusActions({ order, onStatusChange, loading }) {
       >
         <NextIcon size={15} />
         {nextStatus === 'confirmed'  && 'Siparişi Onayla'}
-        {nextStatus === 'processing' && 'Hazırlamaya Al'}
+        {nextStatus === 'preparing' && 'Hazırlamaya Al'}
         {nextStatus === 'shipped'    && 'Kargoya Ver'}
-        {nextStatus === 'delivered'  && 'Teslim Edildi Olarak İşaretle'}
+        {nextStatus === 'completed'  && 'Teslim Edildi Olarak İşaretle'}
       </button>
     )
   }

@@ -1,5 +1,4 @@
-from typing import Optional, Union, Any
-from datetime import timezone, datetime
+from datetime import UTC, datetime
 
 from sqlmodel import Session
 
@@ -25,6 +24,8 @@ from app.repositories.order_repository import (
     get_user_orders,
 )
 from app.schemas.order import (
+    AdminOrderListResponse,
+    AdminOrderResponse,
     CheckoutAddress,
     OrderAdminUpdate,
     OrderCreate,
@@ -61,8 +62,8 @@ def create_checkout_order(
     session: Session,
     *,
     payload: OrderCreate,
-    current_user: Optional[User],
-    session_token: Optional[str],
+    current_user: User | None,
+    session_token: str | None,
 ) -> OrderResponse:
     if current_user is not None:
         cart = get_cart_by_user_id(session, current_user.id)
@@ -229,7 +230,7 @@ def list_admin_orders(
     page: int,
     page_size: int,
     order_status=None,
-) -> OrderListResponse:
+) -> AdminOrderListResponse:
     orders, total = get_all_orders(
         session,
         page=page,
@@ -243,9 +244,9 @@ def list_admin_orders(
         else 0
     )
 
-    return OrderListResponse(
+    return AdminOrderListResponse(
         items=[
-            OrderResponse.model_validate(order)
+            AdminOrderResponse.model_validate(order)
             for order in orders
         ],
         total=total,
@@ -275,13 +276,13 @@ def get_admin_order(
     session: Session,
     *,
     order_id: int,
-) -> OrderResponse:
+) -> AdminOrderResponse:
     order = get_order_by_id(session, order_id)
 
     if order is None:
         raise NotFoundError("Sipariş bulunamadı.")
 
-    return OrderResponse.model_validate(order)
+    return AdminOrderResponse.model_validate(order)
 
 
 def cancel_my_order(
@@ -289,7 +290,7 @@ def cancel_my_order(
     *,
     order_id: int,
     user_id: int,
-    note: Optional[str],
+    note: str | None,
 ) -> OrderResponse:
     order = get_order_by_id(session, order_id)
 
@@ -328,8 +329,8 @@ def change_order_status(
     order_id: int,
     new_status: OrderStatus,
     changed_by_user_id: int,
-    note: Optional[str],
-) -> OrderResponse:
+    note: str | None,
+) -> AdminOrderResponse:
     order = get_order_by_id(session, order_id)
 
     if order is None:
@@ -362,14 +363,14 @@ def change_order_status(
     if saved_order is None:
         raise NotFoundError("Güncellenen sipariş bulunamadı.")
 
-    return OrderResponse.model_validate(saved_order)
+    return AdminOrderResponse.model_validate(saved_order)
 
 def update_order_admin_details(
     session: Session,
     *,
     order_id: int,
     payload: OrderAdminUpdate,
-) -> OrderResponse:
+) -> AdminOrderResponse:
     order = get_order_by_id(session, order_id)
 
     if order is None:
@@ -380,7 +381,7 @@ def update_order_admin_details(
     for field, value in update_data.items():
         setattr(order, field, value)
 
-    order.updated_at = datetime.now(timezone.utc)
+    order.updated_at = datetime.now(UTC)
     session.add(order)
     session.commit()
 
@@ -389,4 +390,4 @@ def update_order_admin_details(
     if saved_order is None:
         raise NotFoundError("Güncellenen sipariş bulunamadı.")
 
-    return OrderResponse.model_validate(saved_order)
+    return AdminOrderResponse.model_validate(saved_order)
