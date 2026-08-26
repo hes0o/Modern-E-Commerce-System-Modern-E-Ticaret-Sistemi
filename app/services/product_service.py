@@ -1,5 +1,4 @@
-from typing import Optional, Union, Any
-from sqlmodel import Session, select
+from sqlmodel import Session
 
 from app.core.exceptions import (
     BusinessRuleError,
@@ -51,7 +50,7 @@ def validate_category(
 
 def validate_brand(
     session: Session,
-    brand_id: Optional[int],
+    brand_id: int | None,
     category_id: int,
 ) -> None:
     if brand_id is None:
@@ -78,8 +77,8 @@ def ensure_product_fields_are_unique(
     *,
     sku: str,
     slug: str,
-    barcode: Optional[str],
-    current_product_id: Optional[int] = None,
+    barcode: str | None,
+    current_product_id: int | None = None,
 ) -> None:
     product_with_sku = get_product_by_sku(session, sku)
 
@@ -120,7 +119,7 @@ def ensure_product_fields_are_unique(
 
 def validate_price_rules(
     price: float,
-    discount_price: Optional[float],
+    discount_price: float | None,
 ) -> None:
     if (
         discount_price is not None
@@ -134,7 +133,7 @@ def validate_price_rules(
 def validate_stock_rules(
     *,
     has_variants: bool,
-    stock: Optional[int],
+    stock: int | None,
 ) -> None:
     if has_variants and stock is not None:
         raise BusinessRuleError(
@@ -152,20 +151,15 @@ def list_products(
     *,
     page: int,
     page_size: int,
-    search: Optional[str],
-    category_id: Optional[int],
-    status: Optional[str] = None,
-    brand_id: Optional[int] = None,
-    price_min: Optional[float] = None,
-    price_max: Optional[float] = None,
-    sort_by: Optional[str] = None,
+    search: str | None,
+    category_id: int | None,
+    status: ProductStatus | None = None,
+    brand_id: int | None = None,
+    price_min: float | None = None,
+    price_max: float | None = None,
+    sort_by: str | None = None,
 ) -> ProductListResponse:
-    enum_status = None
-    if status:
-        try:
-            enum_status = ProductStatus(status)
-        except ValueError:
-            pass
+
 
     products, total = get_products(
         session,
@@ -173,7 +167,7 @@ def list_products(
         page_size=page_size,
         search=search,
         category_id=category_id,
-        status=enum_status,
+        status=status,
         brand_id=brand_id,
         price_min=price_min,
         price_max=price_max,
@@ -478,30 +472,12 @@ def update_existing_product(
     return saved_product
 
 
-def delete_product_permanently(
+def archive_product(
     session: Session,
     product_id: int,
 ) -> Product:
-    from app.models.stock import StockMovement
-
     product = get_product(session, product_id)
 
-    # Delete related stock movements
-    movements = session.exec(
-        select(StockMovement).where(StockMovement.product_id == product_id)
-    ).all()
-    for m in movements:
-        session.delete(m)
+    product.status = ProductStatus.ARCHIVED
 
-    # Delete related images
-    for img in product.images:
-        session.delete(img)
-
-    # Delete related variants
-    for v in product.variants:
-        session.delete(v)
-
-    session.delete(product)
-    session.commit()
-
-    return product
+    return save_product(session, product)

@@ -22,7 +22,7 @@ export default function ProductListPage() {
   const loadProducts = useCallback(async () => {
     setLoading(true)
     try {
-      const res = await productService.getAll({ page, limit, search })
+      const res = await productService.getAdminAll({ page, limit, search })
       setProducts(res.items)
       setTotalItems(res.total)
     } catch (err) {

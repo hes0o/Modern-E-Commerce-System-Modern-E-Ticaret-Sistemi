@@ -17,7 +17,7 @@ export default function ProductFormPage() {
     if (isEdit) {
       async function loadProduct() {
         try {
-          const res = await productService.getById(id)
+          const res = await productService.getAdminById(id)
           setInitialValues(res)
         } catch (err) {
           console.error(err)

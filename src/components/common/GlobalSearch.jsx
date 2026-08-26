@@ -60,7 +60,7 @@ export default function GlobalSearch({ open, onClose }) {
     try {
       const [ordersRes, productsRes, usersRes] = await Promise.allSettled([
         api.get('/api/orders/admin', { params: { page: 1, page_size: 4 } }),
-        api.get('/api/products', { params: { search: q, page: 1, page_size: 4 } }),
+        api.get('/api/products/admin', { params: { search: q, page: 1, page_size: 4 } }),
         api.get('/api/admin/users', { params: { search: q, page: 1, page_size: 3 } }),
       ])
       setResults({

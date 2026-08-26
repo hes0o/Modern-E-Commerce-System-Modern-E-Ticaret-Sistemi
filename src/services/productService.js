@@ -4,7 +4,46 @@
 import api from '@/services/api'
 
 export const productService = {
-  async getAll({ page = 1, limit = 10, search = '', category = '', status = '', brandId = '', priceMin = '', priceMax = '', sortBy = '' } = {}) {
+  async getAll({
+    page = 1,
+    limit = 10,
+    search = '',
+    category = '',
+    brandId = '',
+    priceMin = '',
+    priceMax = '',
+    sortBy = '',
+  } = {}) {
+    const params = { page, page_size: limit }
+    if (search) params.search = search
+    if (category) params.category_id = category
+    if (brandId) params.brand_id = brandId
+    if (priceMin !== '') params.price_min = priceMin
+    if (priceMax !== '') params.price_max = priceMax
+    if (sortBy) params.sort_by = sortBy
+
+    const res = await api.get('/api/products', { params })
+    const data = res.data.data
+
+    return {
+      items: data.items || [],
+      total: data.total || 0,
+      page: data.page || page,
+      limit: data.page_size || limit,
+    }
+  },
+
+  async getAdminAll({
+    page = 1,
+    limit = 10,
+    search = '',
+    category = '',
+    status = '',
+    brandId = '',
+    priceMin = '',
+    priceMax = '',
+    sortBy = '',
+  } = {}) {
     const params = { page, page_size: limit }
     if (search) params.search = search
     if (category) params.category_id = category
@@ -13,8 +52,10 @@ export const productService = {
     if (priceMin !== '') params.price_min = priceMin
     if (priceMax !== '') params.price_max = priceMax
     if (sortBy) params.sort_by = sortBy
-    const res = await api.get('/api/products', { params })
+
+    const res = await api.get('/api/products/admin', { params })
     const data = res.data.data
+
     return {
       items: data.items || [],
       total: data.total || 0,
@@ -25,6 +66,11 @@ export const productService = {
 
   async getById(id) {
     const res = await api.get(`/api/products/${id}`)
+    return res.data.data
+  },
+
+  async getAdminById(id) {
+    const res = await api.get(`/api/products/admin/${id}`)
     return res.data.data
   },
 
