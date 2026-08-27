@@ -1,6 +1,6 @@
 export const ITEMS_PER_PAGE = 10
 
-export const ORDER_STATUSES = ['pending', 'processing', 'shipped', 'delivered', 'cancelled']
+export const ORDER_STATUSES = ['pending', 'confirmed', 'preparing', 'shipped', 'completed', 'cancelled']
 
 export const PRODUCT_STATUSES = ['active', 'draft', 'out_of_stock']
 

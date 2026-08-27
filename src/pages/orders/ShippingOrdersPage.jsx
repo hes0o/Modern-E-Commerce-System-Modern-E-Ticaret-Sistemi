@@ -35,7 +35,7 @@ export default function ShippingOrdersPage() {
   setUpdating(id)
 
   try {
-    await orderService.updateStatus(id, "delivered")
+    await orderService.updateStatus(id, "completed")
     toast.success("Sipariş teslim edildi.")
     await load()
   } catch {
@@ -110,7 +110,7 @@ export default function ShippingOrdersPage() {
 
                     <div className="flex items-center gap-2 flex-wrap">
                       <button
-                        onClick={() => navigate(`/orders/${order.id}`, {
+                        onClick={() => navigate(`/admin/orders/${order.id}`, {
                                 state: {
                                           from: location.pathname,
                                 },

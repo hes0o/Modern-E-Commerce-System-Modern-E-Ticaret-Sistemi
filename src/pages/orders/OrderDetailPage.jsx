@@ -12,13 +12,14 @@ import CargoLabelModal from './CargoLabelModal'
 
 const STATUS_CONFIG = {
   pending:    { label: 'Beklemede',     color: 'yellow',  icon: Clock },
-  processing: { label: 'Hazırlanıyor',  color: 'blue',    icon: Package },
+  confirmed:  { label: 'Onaylandı',    color: 'sky',     icon: CheckCircle2 },
+  preparing:  { label: 'Hazırlanıyor',  color: 'blue',    icon: Package },
   shipped:    { label: 'Kargoda',       color: 'purple',  icon: Truck },
-  delivered:  { label: 'Teslim Edildi', color: 'green',   icon: CheckCircle2 },
+  completed:  { label: 'Teslim Edildi', color: 'green',   icon: CheckCircle2 },
   cancelled:  { label: 'İptal Edildi',  color: 'red',     icon: XCircle },
 }
 
-const STATUS_PIPELINE = ['pending', 'processing', 'shipped', 'delivered']
+const STATUS_PIPELINE = ['pending', 'confirmed', 'preparing', 'shipped', 'completed']
 
 function StatusTimeline({ timeline, currentStatus }) {
   if (!timeline || timeline.length === 0) return null
@@ -51,7 +52,7 @@ function StatusTimeline({ timeline, currentStatus }) {
 }
 
 function NextStatusActions({ order, onStatusChange, loading }) {
-  if (order.status === 'delivered' || order.status === 'cancelled') return null
+  if (order.status === 'completed' || order.status === 'cancelled') return null
 
   const currentIdx = STATUS_PIPELINE.indexOf(order.status)
   const nextStatus = STATUS_PIPELINE[currentIdx + 1]
@@ -69,9 +70,10 @@ function NextStatusActions({ order, onStatusChange, loading }) {
         className="btn btn-brand flex items-center gap-2"
       >
         <NextIcon size={15} />
-        {nextStatus === 'processing' && 'Hazırlamaya Al'}
+        {nextStatus === 'confirmed' && 'Onayla'}
+        {nextStatus === 'preparing' && 'Hazırlamaya Al'}
         {nextStatus === 'shipped' && 'Kargoya Ver'}
-        {nextStatus === 'delivered' && 'Teslim Edildi Olarak İşaretle'}
+        {nextStatus === 'completed' && 'Teslim Edildi Olarak İşaretle'}
       </button>
     )
   }
@@ -180,7 +182,7 @@ export default function OrderDetailPage() {
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
         <div className="flex items-center gap-4">
           <button
-            onClick={() => navigate(location.state?.from || "/orders")}
+            onClick={() => navigate(location.state?.from || "/admin/orders")}
             className="btn btn-secondary p-2">
               <ArrowLeft size={16} />
           </button>
@@ -267,8 +269,8 @@ export default function OrderDetailPage() {
             <StatusTimeline timeline={order.timeline} currentStatus={order.status} />
           </div>
 
-          {/* Shipping Info (if shipped/delivered) */}
-          {(order.status === 'shipped' || order.status === 'delivered') && order.shippingCompany && (
+          {/* Shipping Info (if shipped/completed) */}
+          {(order.status === 'shipped' || order.status === 'completed') && order.shippingCompany && (
             <div className="card p-6 space-y-4">
               <h3 className="text-base font-bold text-slate-800 border-b border-slate-100 pb-3 flex items-center gap-2">
                 <Truck size={18} className="text-indigo-500" /> Kargo Bilgileri
