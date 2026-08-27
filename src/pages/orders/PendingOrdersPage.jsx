@@ -42,11 +42,13 @@ export default function PendingOrdersPage() {
   const handleApprove = async (id) => {
     setUpdating(id)
     try {
-      await orderService.updateStatus(id, 'processing')
+      // State machine: pending → confirmed → preparing (two transitions required)
+      await orderService.updateStatus(id, 'confirmed')
+      await orderService.updateStatus(id, 'preparing')
       toast.success('Sipariş onaylandı ve hazırlık aşamasına alındı.')
       await load()
     } catch {
-      toast.error('İşlem başarısız.')
+      toast.error('Durum güncellenemedi.')
     } finally {
       setUpdating(null)
     }
@@ -134,7 +136,7 @@ export default function PendingOrdersPage() {
                       </span>
                       <div className="flex items-center gap-2">
                         <button
-                          onClick={() => navigate(`/orders/${order.id}`, {
+                          onClick={() => navigate(`/admin/orders/${order.id}`, {
                           state: {from: location.pathname,},})}
                           className="btn btn-secondary btn-sm flex items-center gap-1.5"
                         >

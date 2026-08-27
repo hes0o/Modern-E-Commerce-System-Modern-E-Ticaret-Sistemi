@@ -131,7 +131,7 @@ export default function CancelledOrdersPage() {
                   </div>
 
                   <button
-                    onClick={() => navigate(`/orders/${order.id}`, {
+                    onClick={() => navigate(`/admin/orders/${order.id}`, {
                                     state: {
                                from: location.pathname,
                                  },

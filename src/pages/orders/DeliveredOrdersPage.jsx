@@ -15,7 +15,7 @@ export default function DeliveredOrdersPage() {
 
     try {
       const res = await orderService.getAll({
-      status: "delivered",
+      status: "completed",
       limit: 100,
     })
 
@@ -80,7 +80,7 @@ export default function DeliveredOrdersPage() {
 
                   <div className="flex items-center gap-2 flex-wrap">
                     <button
-                      onClick={() => navigate(`/orders/${order.id}`, {
+                      onClick={() => navigate(`/admin/orders/${order.id}`, {
                     state: {
                                     from: location.pathname,
                               },
