@@ -21,7 +21,7 @@ DATABASE_URL = os.getenv(
 
 engine = create_engine(
     DATABASE_URL,
-    echo=os.getenv("APP_ENV", "development") == "development",
+    echo=os.getenv("SQL_ECHO", "").lower() == "true",
     pool_size=10,
     max_overflow=20,
     pool_pre_ping=True,
