@@ -34,6 +34,7 @@ export const orderService = {
       phone: customerPhone,
       address: fullAddrStr,
       orderedAt: raw.created_at,
+      updatedAt: raw.updated_at || raw.created_at,
       status: raw.status,
       paymentMethod: raw.payment_method === 'cod' ? 'Kapıda Ödeme' : raw.payment_method === 'bank_transfer' ? 'Havale / EFT' : raw.payment_method,
       subtotal: raw.subtotal || 0,
