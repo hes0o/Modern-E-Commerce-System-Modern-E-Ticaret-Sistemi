@@ -69,7 +69,7 @@ export default function AppRouter() {
             <Route path="shop" element={<ShopPage />} />
             <Route path="shop/:id" element={<ProductDetailPage />} />
             <Route path="cart" element={<CartPage />} />
-            <Route path="checkout" element={<CustomerRoute><CheckoutPage /></CustomerRoute>} />
+            <Route path="checkout" element={<CheckoutPage />} />
             <Route path="login" element={<CustomerLoginPage />} />
 
             {/* Customer account pages — require login */}

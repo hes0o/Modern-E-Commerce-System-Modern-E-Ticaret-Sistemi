@@ -22,6 +22,10 @@ api.interceptors.request.use(
         if (user?.token) {
           config.headers.Authorization = `Bearer ${user.token}`
         }
+    const sessionToken = localStorage.getItem('shop_session_token')
+    if (!token && sessionToken) {
+      config.headers['X-Session-Token'] = sessionToken
+    }
       } catch {
         // ignore
       }

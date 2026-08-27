@@ -1,5 +1,4 @@
-from typing import Optional, Union, Any
-from datetime import timezone, datetime
+from datetime import UTC, datetime
 
 from sqlmodel import Session
 
@@ -40,6 +39,7 @@ from app.services.order_service import (
 )
 from app.services.order_state_machine import InvalidStateTransition
 
+CURRENT_CONTRACT_VERSION = "v1"
 
 def address_to_snapshot(address: Address) -> dict:
     return {
@@ -61,8 +61,8 @@ def create_checkout_order(
     session: Session,
     *,
     payload: OrderCreate,
-    current_user: Optional[User],
-    session_token: Optional[str],
+    current_user: User | None,
+    session_token: str | None,
 ) -> OrderResponse:
     if current_user is not None:
         cart = get_cart_by_user_id(session, current_user.id)
@@ -151,7 +151,7 @@ def create_checkout_order(
             billing_address_snapshot=billing_snapshot,
             payment_method=payload.payment_method,
             customer_note=payload.customer_note,
-            contract_version_accepted=payload.contract_version_accepted,
+            contract_version_accepted=CURRENT_CONTRACT_VERSION,
         )
 
         # Yeni sipariş bildirimi ekle
@@ -289,7 +289,7 @@ def cancel_my_order(
     *,
     order_id: int,
     user_id: int,
-    note: Optional[str],
+    note: str | None,
 ) -> OrderResponse:
     order = get_order_by_id(session, order_id)
 
@@ -328,7 +328,7 @@ def change_order_status(
     order_id: int,
     new_status: OrderStatus,
     changed_by_user_id: int,
-    note: Optional[str],
+    note: str | None,
 ) -> OrderResponse:
     order = get_order_by_id(session, order_id)
 
@@ -380,7 +380,7 @@ def update_order_admin_details(
     for field, value in update_data.items():
         setattr(order, field, value)
 
-    order.updated_at = datetime.now(timezone.utc)
+    order.updated_at = datetime.now(UTC)
     session.add(order)
     session.commit()
 
