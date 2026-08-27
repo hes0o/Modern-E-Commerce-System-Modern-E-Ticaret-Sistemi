@@ -5,7 +5,7 @@
  * @returns {string}
  */
 export const formatCurrency = (amount, currency = 'TRY') =>
-  new Intl.NumberFormat('tr-TR', { style: 'currency', currency: 'TRY' }).format(amount)
+  new Intl.NumberFormat('tr-TR', { style: 'currency', currency }).format(amount)
 
 /**
  * Tarih formatlama
@@ -14,8 +14,17 @@ export const formatCurrency = (amount, currency = 'TRY') =>
  * @returns {string}
  */
 export const formatDate = (date, options = {}) => {
+  const parsedDate = new Date(date)
+
+  if (!date || Number.isNaN(parsedDate.getTime())) {
+    return '—'
+  }
+
   const defaults = { year: 'numeric', month: 'long', day: 'numeric' }
-  return new Intl.DateTimeFormat('tr-TR', { ...defaults, ...options }).format(new Date(date))
+  return new Intl.DateTimeFormat(
+    'tr-TR',
+    { ...defaults, ...options }
+  ).format(parsedDate)
 }
 
 /**

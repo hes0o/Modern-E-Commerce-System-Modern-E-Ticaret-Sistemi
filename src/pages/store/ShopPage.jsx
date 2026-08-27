@@ -89,12 +89,20 @@ export default function ShopPage() {
 
   const totalPages = Math.ceil(total / limit)
 
+    const pageTitle = search
+    ? `"${search}" için sonuçlar`
+    : sort === 'discount'
+      ? 'Fırsatlar'
+      : sort === 'new'
+        ? 'Yeni Gelenler'
+        : 'Tüm Ürünler'
+
   return (
     <div className="max-w-screen-xl mx-auto px-4 py-8">
       {/* Page Header */}
       <div className="mb-6">
         <h1 className="text-2xl font-black text-slate-900">
-          {search ? `"${search}" için sonuçlar` : 'Tüm Ürünler'}
+          {pageTitle}
         </h1>
         {!loading && <p className="text-sm text-gray-500 mt-1">{total} ürün bulundu</p>}
       </div>

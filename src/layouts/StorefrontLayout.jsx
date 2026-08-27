@@ -41,6 +41,25 @@ export default function StorefrontLayout() {
 
   const isCustomer = user?.role === 'customer'
 
+  function isActiveNavLink(path) {
+    const [pathname, queryString = ''] = path.split('?')
+
+    if (location.pathname !== pathname) {
+      return false
+    }
+
+    if (!queryString) {
+      return location.search === ''
+    }
+
+    const currentParams = new URLSearchParams(location.search)
+    const expectedParams = new URLSearchParams(queryString)
+
+    return Array.from(expectedParams.entries()).every(
+      ([key, value]) => currentParams.get(key) === value
+    )
+  }
+
   return (
     <div className="min-h-screen bg-gray-50 flex flex-col">
       {/* Top announcement bar */}
@@ -167,7 +186,7 @@ export default function StorefrontLayout() {
               <Link
                 key={link.path}
                 to={link.path}
-                className={`px-4 py-1.5 text-sm font-medium rounded-lg transition-colors ${location.pathname === link.path ? 'bg-indigo-600 text-white' : 'text-gray-600 hover:bg-indigo-50 hover:text-indigo-700'}`}
+                className={`px-4 py-1.5 text-sm font-medium rounded-lg transition-colors ${isActiveNavLink(link.path) ? 'bg-indigo-600 text-white' : 'text-gray-600 hover:bg-indigo-50 hover:text-indigo-700'}`}
               >
                 {link.label}
               </Link>

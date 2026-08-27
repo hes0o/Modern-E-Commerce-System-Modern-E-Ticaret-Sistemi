@@ -34,6 +34,7 @@ export const orderService = {
       phone: customerPhone,
       address: fullAddrStr,
       orderedAt: raw.created_at,
+      updatedAt: raw.updated_at || raw.created_at,
       status: raw.status,
       paymentMethod: raw.payment_method === 'cod' ? 'Kapıda Ödeme' : raw.payment_method === 'bank_transfer' ? 'Havale / EFT' : raw.payment_method,
       subtotal: raw.subtotal || 0,
@@ -50,7 +51,7 @@ export const orderService = {
     }
   },
 
-  async getAll({ page = 1, limit = 10, search = '', status = '' } = {}) {
+  async getAll({ page = 1, limit = 10, status = '' } = {}) {
     const params = { page, page_size: limit }
     if (status) params.order_status = status
     const res = await api.get('/api/orders/admin', { params })
