@@ -89,7 +89,7 @@ export default function ShopPage() {
 
   const totalPages = Math.ceil(total / limit)
 
-    const pageTitle = search
+  const pageTitle = search
     ? `"${search}" için sonuçlar`
     : sort === 'discount'
       ? 'Fırsatlar'
