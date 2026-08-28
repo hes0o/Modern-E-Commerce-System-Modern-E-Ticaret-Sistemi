@@ -183,6 +183,18 @@ def list_products(
     items = []
     for product in products:
         prod_dict = product.model_dump()
+        images = sorted(
+            product.images,
+            key=lambda image: (
+                not image.is_cover,
+                image.sort_order,
+                image.id,
+            ),
+        )
+        prod_dict["images"] = [
+            image.model_dump()
+            for image in images
+        ]
         if product.has_variants:
             prod_dict["stock"] = sum(v.stock for v in product.variants if v.stock is not None)
         items.append(ProductResponse.model_validate(prod_dict))

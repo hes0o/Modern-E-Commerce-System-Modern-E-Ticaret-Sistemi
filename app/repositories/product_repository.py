@@ -80,7 +80,10 @@ def get_products(
         order_col = col(Product.created_at).desc()
 
     statement = (
-        statement.options(selectinload(Product.variants))
+        statement.options(
+            selectinload(Product.variants),
+            selectinload(Product.images),
+        )
         .order_by(order_col)
         .offset((page - 1) * page_size)
         .limit(page_size)
@@ -96,7 +99,14 @@ def get_product_by_id(
     session: Session,
     product_id: int,
 ) -> Product | None:
-    statement = select(Product).where(col(Product.id) == product_id).options(selectinload(Product.variants))
+    statement = (
+        select(Product)
+        .where(col(Product.id) == product_id)
+        .options(
+            selectinload(Product.variants),
+            selectinload(Product.images),
+        )
+    )
     return session.exec(statement).first()
 
 

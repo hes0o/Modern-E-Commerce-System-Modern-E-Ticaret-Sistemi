@@ -143,6 +143,15 @@ class ProductUpdate(BaseModel):
     is_campaign: bool | None = None
     variants: list[ProductVariantUpdate] | None = None
 
+class ProductImageResponse(BaseModel):
+    id: int
+    product_id: int
+    image_path: str
+    is_cover: bool
+    sort_order: int
+
+    model_config = ConfigDict(from_attributes=True)
+
 
 class ProductResponse(BaseModel):
     id: int
@@ -168,6 +177,7 @@ class ProductResponse(BaseModel):
     is_bestseller: bool
     is_featured: bool
     is_campaign: bool
+    images: list[ProductImageResponse] = Field(default_factory=list)
     created_at: datetime
     updated_at: datetime
 

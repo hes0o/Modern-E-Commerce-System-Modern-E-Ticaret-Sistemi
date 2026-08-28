@@ -34,6 +34,18 @@ def create_product_response(
     detail: bool = False,
 ) -> ProductResponse | ProductDetailResponse:
     prod_dict = product.model_dump()
+    images = sorted(
+        getattr(product, "images", []),
+        key=lambda image: (
+            not image.is_cover,
+            image.sort_order,
+            image.id,
+        ),
+    )
+    prod_dict["images"] = [
+        image.model_dump()
+        for image in images
+    ]
     if getattr(product, "has_variants", False):
         variants = getattr(product, "variants", [])
         prod_dict["stock"] = sum(v.stock for v in variants if getattr(v, "stock", None) is not None)

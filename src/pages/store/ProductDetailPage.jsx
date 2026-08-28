@@ -3,8 +3,23 @@ import { useParams, useNavigate } from 'react-router-dom'
 import { ShoppingCart, Heart, ArrowLeft, Star, Package, Check, Truck, Shield } from 'lucide-react'
 import { productService } from '@/services/productService'
 import { useCart } from '@/context/CartContext'
-import { useAuth } from '@/hooks/useAuth'
 import toast from 'react-hot-toast'
+import { API_BASE_URL } from '@/utils/constants'
+
+function resolveImageUrl(path) {
+  if (!path) return null
+
+  if (/^https?:\/\//i.test(path)) {
+    return path
+  }
+
+  const apiOrigin = new URL(
+    API_BASE_URL,
+    window.location.origin
+  ).origin
+
+  return `${apiOrigin}${path.startsWith('/') ? path : `/${path}`}`
+}
 
 function formatPrice(p) {
   if (p == null) return '—'
@@ -15,7 +30,6 @@ export default function ProductDetailPage() {
   const { id } = useParams()
   const navigate = useNavigate()
   const { addItem } = useCart()
-  const { isAuthenticated } = useAuth()
   const [product, setProduct] = useState(null)
   const [loading, setLoading] = useState(true)
   const [selectedImage, setSelectedImage] = useState(0)
@@ -79,7 +93,14 @@ export default function ProductDetailPage() {
         <div>
           <div className="aspect-square bg-gray-50 rounded-3xl overflow-hidden border border-gray-100 mb-3">
             {images[selectedImage] ? (
-              <img src={images[selectedImage].url} alt={product.name} className="w-full h-full object-cover" />
+              <img
+                src={resolveImageUrl(
+                  images[selectedImage].url ||
+                  images[selectedImage].image_path
+                )}
+                alt={product.name}
+                className="w-full h-full object-cover"
+              />
             ) : (
               <div className="w-full h-full flex items-center justify-center">
                 <Package size={80} className="text-gray-200" />
@@ -91,7 +112,11 @@ export default function ProductDetailPage() {
               {images.map((img, i) => (
                 <button key={i} onClick={() => setSelectedImage(i)}
                   className={`flex-shrink-0 w-16 h-16 rounded-xl overflow-hidden border-2 transition-all ${i === selectedImage ? 'border-indigo-500' : 'border-gray-100 hover:border-gray-300'}`}>
-                  <img src={img.url} alt="" className="w-full h-full object-cover" />
+                  <img
+                    src={resolveImageUrl(img.url || img.image_path)}
+                    alt=""
+                    className="w-full h-full object-cover"
+                  />
                 </button>
               ))}
             </div>

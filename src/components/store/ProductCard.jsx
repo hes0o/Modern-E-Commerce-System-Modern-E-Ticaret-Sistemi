@@ -4,10 +4,26 @@ import { Heart, ShoppingCart, Star, Package } from 'lucide-react'
 import { useCart } from '@/context/CartContext'
 import { useAuth } from '@/hooks/useAuth'
 import toast from 'react-hot-toast'
+import { API_BASE_URL } from '@/utils/constants'
 
 function formatPrice(p) {
   if (p == null) return '—'
   return new Intl.NumberFormat('tr-TR', { style: 'currency', currency: 'TRY' }).format(p)
+}
+
+function resolveImageUrl(path) {
+  if (!path) return null
+
+  if (/^https?:\/\//i.test(path)) {
+    return path
+  }
+
+  const apiOrigin = new URL(
+    API_BASE_URL,
+    window.location.origin
+  ).origin
+
+  return `${apiOrigin}${path.startsWith('/') ? path : `/${path}`}`
 }
 
 export default function ProductCard({ product, onFavoriteToggle, isFavorited = false }) {
@@ -44,7 +60,11 @@ export default function ProductCard({ product, onFavoriteToggle, isFavorited = f
   }
 
   const price = product.base_price ?? product.price ?? 0
-  const image = product.images?.[0]?.url || product.image_url
+  const imagePath =
+    product.images?.[0]?.url ||
+    product.images?.[0]?.image_path ||
+    product.image_url
+  const image = resolveImageUrl(imagePath)
   const stock = product.stock ?? Infinity  // Infinity = unknown, treat as in-stock
   const isOutOfStock = stock === 0
 
