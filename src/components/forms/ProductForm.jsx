@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react'
 import ImageUploader from '@/components/common/ImageUploader'
+import ProductImageManager from './ProductImageManager'
 import VariantBuilder from './VariantBuilder'
 import api from '@/services/api'
 
@@ -7,7 +8,8 @@ export default function ProductForm({
   initialValues,
   onSubmit,
   loading = false,
-  isEdit = false
+  isEdit = false,
+  productId = null,
 }) {
 
   const [categories, setCategories] = useState([])
@@ -374,18 +376,17 @@ export default function ProductForm({
           {/* Görsel */}
           <div className="card p-6 space-y-4">
             <h3 className="text-base font-bold text-slate-800 border-b border-slate-100 pb-3">
-              Ürün Görseli
+              {isEdit ? 'Ürün Görselleri' : 'Ürün Görseli'}
             </h3>
 
-            <ImageUploader
-              value={formData.image}
-              onChange={(url) =>
-                handleChange(
-                  'image',
-                  url
-                )
-              }
-            />
+            {isEdit && productId ? (
+              <ProductImageManager productId={productId} />
+            ) : (
+              <ImageUploader
+                value={formData.image}
+                onChange={(url) => handleChange('image', url)}
+              />
+            )}
           </div>
 
 

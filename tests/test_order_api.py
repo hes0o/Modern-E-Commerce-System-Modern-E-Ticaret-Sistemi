@@ -94,16 +94,30 @@ def test_order_creation_and_cancellation_restores_stock(
     )
     assert cart_response.status_code == 200
 
+    order_payload = {
+        "shipping_address_id": address_id,
+        "billing_address_id": address_id,
+        "payment_method": "cod",
+        "customer_note": "Otomatik sipariş testi",
+        "contract_accepted": True,
+        "kvkk_accepted": True,
+    }
+
+    for consent_field in ("contract_accepted", "kvkk_accepted"):
+        rejected_response = client.post(
+            "/api/orders",
+            headers=headers,
+            json={
+                **order_payload,
+                consent_field: False,
+            },
+        )
+        assert rejected_response.status_code == 400
+
     order_response = client.post(
         "/api/orders",
         headers=headers,
-        json={
-            "shipping_address_id": address_id,
-            "billing_address_id": address_id,
-            "payment_method": "cod",
-            "customer_note": "Otomatik sipariş testi",
-            "contract_version_accepted": "v1",
-        },
+        json=order_payload,
     )
 
     assert order_response.status_code == 201
@@ -201,7 +215,8 @@ def test_guest_checkout_uses_session_token(client, engine):
             },
             "payment_method": "cod",
             "customer_note": "Misafir checkout testi",
-            "contract_version_accepted": "v1",
+            "contract_accepted": True,
+            "kvkk_accepted": True,
         },
     )
 

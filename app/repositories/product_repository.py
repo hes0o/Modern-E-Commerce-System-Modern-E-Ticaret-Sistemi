@@ -1,4 +1,3 @@
-from typing import Optional, Union, Any
 from sqlalchemy import func, or_
 from sqlalchemy.orm import selectinload
 from sqlmodel import Session, col, select
@@ -12,9 +11,13 @@ def get_products(
     *,
     page: int = 1,
     page_size: int = 20,
-    search: Optional[str] = None,
-    category_id: Optional[int] = None,
-    status: Optional[ProductStatus] = ProductStatus.PUBLISHED,
+    search: str | None = None,
+    category_id: int | None = None,
+    status: ProductStatus | None = ProductStatus.PUBLISHED,
+    brand_id: int | None = None,
+    price_min: float | None = None,
+    price_max: float | None = None,
+    sort_by: str | None = None,
 ) -> tuple[list[Product], int]:
     statement = select(Product)
     count_statement = select(func.count()).select_from(Product)
@@ -45,11 +48,43 @@ def get_products(
             search_condition,
         )
 
-    statement = (
-        statement.options(selectinload(Product.variants))
-        .order_by(
-            col(Product.created_at).desc(),
+    if brand_id is not None:
+        brand_condition = col(Product.brand_id) == brand_id
+        statement = statement.where(brand_condition)
+        count_statement = count_statement.where(brand_condition)
+
+    if price_min is not None:
+        statement = statement.where(col(Product.price) >= price_min)
+        count_statement = count_statement.where(col(Product.price) >= price_min)
+
+    if price_max is not None:
+        statement = statement.where(col(Product.price) <= price_max)
+        count_statement = count_statement.where(col(Product.price) <= price_max)
+    if sort_by == "new":
+        new_condition = col(Product.is_new).is_(True)
+        statement = statement.where(new_condition)
+        count_statement = count_statement.where(new_condition)
+
+    if sort_by == "discount":
+        deal_condition = or_(
+            col(Product.is_campaign).is_(True),
+            col(Product.discount_price).is_not(None),
         )
+        statement = statement.where(deal_condition)
+        count_statement = count_statement.where(deal_condition)
+    if sort_by == 'price_asc':
+        order_col = col(Product.price).asc()
+    elif sort_by == 'price_desc':
+        order_col = col(Product.price).desc()
+    else:
+        order_col = col(Product.created_at).desc()
+
+    statement = (
+        statement.options(
+            selectinload(Product.variants),
+            selectinload(Product.images),
+        )
+        .order_by(order_col)
         .offset((page - 1) * page_size)
         .limit(page_size)
     )
@@ -63,15 +98,22 @@ def get_products(
 def get_product_by_id(
     session: Session,
     product_id: int,
-) -> Optional[Product]:
-    statement = select(Product).where(col(Product.id) == product_id).options(selectinload(Product.variants))
+) -> Product | None:
+    statement = (
+        select(Product)
+        .where(col(Product.id) == product_id)
+        .options(
+            selectinload(Product.variants),
+            selectinload(Product.images),
+        )
+    )
     return session.exec(statement).first()
 
 
 def get_product_by_slug(
     session: Session,
     slug: str,
-) -> Optional[Product]:
+) -> Product | None:
     statement = select(Product).where(
         col(Product.slug) == slug,
     )
@@ -81,7 +123,7 @@ def get_product_by_slug(
 def get_product_by_sku(
     session: Session,
     sku: str,
-) -> Optional[Product]:
+) -> Product | None:
     statement = select(Product).where(
         col(Product.sku) == sku,
     )
@@ -91,7 +133,7 @@ def get_product_by_sku(
 def get_product_by_barcode(
     session: Session,
     barcode: str,
-) -> Optional[Product]:
+) -> Product | None:
     statement = select(Product).where(
         col(Product.barcode) == barcode,
     )

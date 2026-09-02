@@ -13,19 +13,19 @@ function formatPrice(p) {
 
 export default function CheckoutPage() {
   const { cart, total, clearCart } = useCart()
-  const { isAuthenticated, user } = useAuth()
+  const { isAuthenticated } = useAuth()
   const navigate = useNavigate()
   const [addresses, setAddresses] = useState([])
   const [selectedAddress, setSelectedAddress] = useState(null)
   const [paymentMethod, setPaymentMethod] = useState('cod')
+  const [contractAccepted, setContractAccepted] = useState(false)
+  const [kvkkAccepted, setKvkkAccepted] = useState(false)
+  const [guestEmail, setGuestEmail] = useState('')
   const [note, setNote] = useState('')
   const [loading, setLoading] = useState(false)
+  const [completedOrder, setCompletedOrder] = useState(null)
   const [showNewAddr, setShowNewAddr] = useState(false)
   const [newAddr, setNewAddr] = useState({ title: '', recipient_name: '', phone: '', city: '', district: '', full_address: '', postal_code: '', is_default: false })
-
-  useEffect(() => {
-    if (!isAuthenticated) navigate('/login')
-  }, [isAuthenticated, navigate])
 
   useEffect(() => {
     async function load() {
@@ -40,12 +40,25 @@ export default function CheckoutPage() {
   }, [isAuthenticated])
 
   async function handleSaveAddress() {
+    if (
+      !isAuthenticated &&
+      !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(guestEmail)
+    ) {
+      return toast.error('Please enter a valid email address')
+    }
+
     if (!newAddr.title || newAddr.title.length < 2) return toast.error('Title must be at least 2 characters')
     if (!newAddr.recipient_name || newAddr.recipient_name.length < 2) return toast.error('Name must be at least 2 characters')
     if (!newAddr.phone || newAddr.phone.length < 10) return toast.error('Phone must be at least 10 characters')
     if (!newAddr.city || newAddr.city.length < 2) return toast.error('City is required')
     if (!newAddr.district || newAddr.district.length < 2) return toast.error('District is required')
     if (!newAddr.full_address || newAddr.full_address.length < 5) return toast.error('Full address must be at least 5 characters')
+
+    if (!isAuthenticated) {
+      setSelectedAddress('guest')
+      toast.success('Delivery address is ready!')
+      return
+    }
 
     try {
       const addr = await addressService.create(newAddr)
@@ -62,26 +75,111 @@ export default function CheckoutPage() {
 
   async function handlePlaceOrder() {
     if (!selectedAddress) { toast.error('Please select a delivery address'); return }
+    if (
+      !isAuthenticated &&
+      (
+        !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(guestEmail) ||
+        newAddr.title.trim().length < 2 ||
+        newAddr.recipient_name.trim().length < 2 ||
+        newAddr.phone.trim().length < 10 ||
+        newAddr.city.trim().length < 2 ||
+        newAddr.district.trim().length < 2 ||
+        newAddr.full_address.trim().length < 5
+      )
+    ) {
+      toast.error('Please complete the guest delivery information')
+      return
+    }
+    if (!contractAccepted) {
+      toast.error('Mesafeli Satış Sözleşmesi onaylanmalıdır.')
+      return
+    }
+
+    if (!kvkkAccepted) {
+      toast.error('KVKK metni onaylanmalıdır.')
+      return
+    }
     setLoading(true)
     try {
-      await api.post('/api/orders', {
-        shipping_address_id: selectedAddress,
-        billing_address_id: selectedAddress,
+      const payload = {
         payment_method: paymentMethod,
         customer_note: note,
-        contract_version_accepted: 'v1',
-      })
+        contract_accepted: contractAccepted,
+        kvkk_accepted: kvkkAccepted,
+      }
+
+      if (isAuthenticated) {
+        payload.shipping_address_id = selectedAddress
+        payload.billing_address_id = selectedAddress
+      } else {
+        payload.guest_name = newAddr.recipient_name
+        payload.guest_email = guestEmail
+        payload.guest_phone = newAddr.phone
+        payload.shipping_address = {
+          title: newAddr.title,
+          recipient_name: newAddr.recipient_name,
+          phone: newAddr.phone,
+          city: newAddr.city,
+          district: newAddr.district,
+          full_address: newAddr.full_address,
+          postal_code: newAddr.postal_code || null,
+        }
+      }
+
+      const response = await api.post('/api/orders', payload)
+      const order = response.data?.data
+
       await clearCart()
-      toast.success('Order placed successfully! 🎉')
-      navigate('/account/orders')
+
+      if (isAuthenticated) {
+        toast.success('Order placed successfully!')
+        navigate('/account/orders')
+        return
+      }
+
+      setCompletedOrder(order)
+      toast.success('Order placed successfully!')
     } catch (err) {
       toast.error(err.response?.data?.message || 'Could not place order')
     } finally { setLoading(false) }
   }
 
   const items = cart?.items || []
-  const shipping = total >= 500 ? 0 : 29.99
-  const grandTotal = total + shipping
+  const grandTotal = total
+
+  if (completedOrder) {
+    return (
+      <div className="max-w-xl mx-auto px-4 py-16 text-center">
+        <div className="w-16 h-16 mx-auto mb-5 rounded-full bg-emerald-100 text-emerald-600 flex items-center justify-center">
+          <Check size={32} />
+        </div>
+
+        <h1 className="text-2xl font-black text-slate-900 mb-2">
+          Order received!
+        </h1>
+        <p className="text-sm text-gray-500 mb-6">
+          Your order confirmation has been created successfully.
+        </p>
+
+        <div className="bg-white rounded-2xl border border-gray-100 shadow-sm p-5 mb-6">
+          <p className="text-xs text-gray-400 mb-1">Order Number</p>
+          <p className="text-lg font-black text-slate-900">
+            {completedOrder.order_number}
+          </p>
+          <p className="text-xs text-gray-500 mt-3">
+            Confirmation email: {completedOrder.guest_email}
+          </p>
+        </div>
+
+        <Link
+          to="/"
+          className="inline-flex items-center justify-center px-5 py-3 bg-indigo-600 hover:bg-indigo-700 text-white text-sm font-bold rounded-xl transition-colors"
+        >
+          Continue Shopping
+        </Link>
+      </div>
+    )
+  }
 
   return (
     <div className="max-w-screen-lg mx-auto px-4 py-8">
@@ -115,6 +213,20 @@ export default function CheckoutPage() {
             {showNewAddr ? (
               <div className="mt-3 border border-dashed border-indigo-200 rounded-xl p-4 space-y-3 bg-indigo-50/40">
                 <div className="grid grid-cols-2 gap-3">
+                  {!isAuthenticated && (
+                    <div className="col-span-2">
+                      <label className="block text-xs font-semibold text-slate-700 mb-1">
+                        Email
+                      </label>
+                      <input
+                        type="email"
+                        value={guestEmail}
+                        onChange={event => setGuestEmail(event.target.value)}
+                        placeholder="ornek@email.com"
+                        className="w-full px-3 py-2 rounded-lg border border-gray-200 text-xs outline-none focus:border-indigo-400 focus:ring-1 focus:ring-indigo-200 bg-white"
+                      />
+                    </div>
+                  )}
                   {[
                     { f: 'title', label: 'Address Title', placeholder: 'Home, Work...' },
                     { f: 'recipient_name', label: 'Recipient Name', placeholder: 'Full name' },
@@ -136,8 +248,18 @@ export default function CheckoutPage() {
                     className="w-full px-3 py-2 rounded-lg border border-gray-200 text-xs outline-none focus:border-indigo-400 focus:ring-1 focus:ring-indigo-200 bg-white resize-none" />
                 </div>
                 <div className="flex gap-2">
-                  <button onClick={handleSaveAddress} className="flex-1 py-2 bg-indigo-600 text-white text-xs font-bold rounded-xl hover:bg-indigo-700 transition-all">Save Address</button>
-                  <button onClick={() => setShowNewAddr(false)} className="px-4 py-2 border border-gray-200 text-xs font-semibold rounded-xl hover:bg-gray-50 transition-all">Cancel</button>
+                  <button
+                    onClick={handleSaveAddress}
+                    className="flex-1 py-2 bg-indigo-600 text-white text-xs font-bold rounded-xl hover:bg-indigo-700 transition-all"
+                  >
+                    {isAuthenticated ? 'Save Address' : 'Use This Address'}
+                  </button>
+                  <button
+                    onClick={() => setShowNewAddr(false)}
+                    className="px-4 py-2 border border-gray-200 text-xs font-semibold rounded-xl hover:bg-gray-50 transition-all"
+                  >
+                    Cancel
+                  </button>
                 </div>
               </div>
             ) : (
@@ -172,6 +294,36 @@ export default function CheckoutPage() {
             <textarea value={note} onChange={e => setNote(e.target.value)} rows={2} placeholder="Any special instructions for your order..."
               className="w-full px-4 py-3 rounded-xl border border-gray-200 text-sm text-slate-700 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-indigo-200 focus:border-indigo-400 transition-all resize-none" />
           </div>
+
+          <div className="bg-white rounded-2xl border border-gray-100 shadow-sm p-5 space-y-3">
+            <h2 className="text-sm font-bold text-slate-900">
+              Yasal Onaylar
+            </h2>
+
+            <label className="flex items-start gap-3 cursor-pointer">
+              <input
+                type="checkbox"
+                checked={contractAccepted}
+                onChange={event => setContractAccepted(event.target.checked)}
+                className="mt-1 accent-indigo-600"
+              />
+              <span className="text-sm text-slate-600">
+                Mesafeli Satış Sözleşmesi&apos;ni okudum ve onaylıyorum.
+              </span>
+            </label>
+
+            <label className="flex items-start gap-3 cursor-pointer">
+              <input
+                type="checkbox"
+                checked={kvkkAccepted}
+                onChange={event => setKvkkAccepted(event.target.checked)}
+                className="mt-1 accent-indigo-600"
+              />
+              <span className="text-sm text-slate-600">
+                KVKK Aydınlatma Metni&apos;ni okudum ve onaylıyorum.
+              </span>
+            </label>
+          </div>
         </div>
 
         {/* Order Summary */}
@@ -194,15 +346,21 @@ export default function CheckoutPage() {
             </div>
             <div className="border-t border-gray-100 pt-3 space-y-2 text-sm">
               <div className="flex justify-between text-gray-600"><span>Subtotal</span><span>{formatPrice(total)}</span></div>
-              <div className="flex justify-between text-gray-600"><span>Shipping</span><span className={shipping === 0 ? 'text-emerald-600 font-semibold' : ''}>{shipping === 0 ? 'FREE' : formatPrice(shipping)}</span></div>
               <div className="flex justify-between font-black text-slate-900 text-base pt-1 border-t border-gray-100"><span>Total</span><span>{formatPrice(grandTotal)}</span></div>
             </div>
-            <button onClick={handlePlaceOrder} disabled={loading || items.length === 0}
-              className="mt-4 w-full flex items-center justify-center gap-2 py-3.5 bg-indigo-600 hover:bg-indigo-700 text-white font-bold rounded-2xl transition-all shadow-lg shadow-indigo-200 hover:-translate-y-0.5 disabled:opacity-60 text-sm">
+            <button
+              onClick={handlePlaceOrder}
+              disabled={
+                loading ||
+                items.length === 0 ||
+                !contractAccepted ||
+                !kvkkAccepted
+              }
+              className="mt-4 w-full flex items-center justify-center gap-2 py-3.5 bg-indigo-600 hover:bg-indigo-700 text-white font-bold rounded-2xl transition-all shadow-lg shadow-indigo-200 hover:-translate-y-0.5 disabled:opacity-60 text-sm"
+            >
               <Check size={16} />
               {loading ? 'Placing order...' : 'Place Order'}
             </button>
-            <p className="text-center text-[10px] text-gray-400 mt-2">By placing an order, you agree to our Terms of Service.</p>
           </div>
         </div>
       </div>

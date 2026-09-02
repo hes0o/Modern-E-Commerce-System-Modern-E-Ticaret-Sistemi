@@ -44,24 +44,28 @@ export default function OrderHistoryPage() {
       ) : (
         <div className="space-y-3">
           {orders.map(order => (
-            <div key={order.id} className="bg-white rounded-2xl border border-gray-100 shadow-sm p-4 hover:border-indigo-200 transition-all">
+            <Link
+              key={order.id}
+              to={`/account/orders/${order.id}`}
+              className="block bg-white rounded-2xl border border-gray-100 shadow-sm p-4 hover:border-indigo-200 hover:shadow-md transition-all"
+            >
               <div className="flex items-center justify-between gap-4">
                 <div className="flex items-center gap-3 min-w-0">
                   <div className="w-10 h-10 bg-indigo-50 rounded-xl flex items-center justify-center flex-shrink-0">
                     <Package size={18} className="text-indigo-500" />
                   </div>
                   <div className="min-w-0">
-                    <p className="text-sm font-bold text-slate-900">Order #{order.id}</p>
+                    <p className="text-sm font-bold text-slate-900">Sipariş #{order.id}</p>
                     <p className="text-xs text-gray-400">{formatDate(order.created_at || order.ordered_at)}</p>
                   </div>
                 </div>
                 <div className="flex items-center gap-3">
                   <Badge status={order.status} />
                   <p className="text-sm font-black text-slate-900 whitespace-nowrap">{formatPrice(order.grand_total || order.total_price || order.total)}</p>
-                  <ChevronRight size={15} className="text-gray-300" />
+                  <ChevronRight size={15} className="text-gray-300 flex-shrink-0" />
                 </div>
               </div>
-            </div>
+            </Link>
           ))}
         </div>
       )}

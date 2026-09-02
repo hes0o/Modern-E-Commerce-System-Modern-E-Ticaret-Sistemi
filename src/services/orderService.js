@@ -51,7 +51,7 @@ export const orderService = {
     }
   },
 
-  async getAll({ page = 1, limit = 10, search = '', status = '' } = {}) {
+  async getAll({ page = 1, limit = 10, status = '' } = {}) {
     const params = { page, page_size: limit }
     if (status) params.order_status = status
     const res = await api.get('/api/orders/admin', { params })

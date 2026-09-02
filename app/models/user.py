@@ -6,12 +6,11 @@ differentiated by `role_id`. Password is stored as a one-way hash
 (bcrypt/argon2) — never plaintext.
 """
 
-from typing import Optional, List
-
 from datetime import datetime
+from typing import Optional
 
 from sqlalchemy import Column, DateTime
-from sqlmodel import Field, Relationship, SQLModel
+from sqlmodel import Field, Relationship
 
 from app.models.base import TimestampMixin
 
@@ -21,30 +20,39 @@ class User(TimestampMixin, table=True):
 
     __tablename__ = "users"
 
-    id: Optional[int] = Field(default=None, primary_key=True)
+    id: int | None = Field(default=None, primary_key=True)
     name: str = Field(max_length=150)
     email: str = Field(max_length=150, unique=True, index=True)
-    phone: Optional[str] = Field(default=None, max_length=20)
+    phone: str | None = Field(default=None, max_length=20)
     password_hash: str = Field(max_length=255)
     role_id: int = Field(foreign_key="roles.id", index=True)
     is_active: bool = Field(default=True)
     newsletter_allowed: bool = Field(default=False)
-    kvkk_accepted_at: Optional[datetime] = Field(
+    kvkk_accepted_at: datetime | None = Field(
         default=None,
         sa_column=Column(DateTime(timezone=True), nullable=True),
     )
-    email_verified_at: Optional[datetime] = Field(
+    email_verified_at: datetime | None = Field(
         default=None,
         sa_column=Column(DateTime(timezone=True), nullable=True),
     )
-    last_login_at: Optional[datetime] = Field(
+    last_login_at: datetime | None = Field(
         default=None,
         sa_column=Column(DateTime(timezone=True), nullable=True),
     )
 
+    failed_login_attempts: int = Field(default=0, ge=0)
+    locked_until: datetime | None = Field(
+        default=None,
+        sa_column=Column(
+            DateTime(timezone=True),
+            nullable=True,
+        ),
+    )
+
     # Relationships
     role: "Role" = Relationship(back_populates="users")  # type: ignore[name-defined]  # noqa: F821
-    addresses: List["Address"] = Relationship(back_populates="user")  # type: ignore[name-defined]  # noqa: F821
-    orders: List["Order"] = Relationship(back_populates="user")  # type: ignore[name-defined]  # noqa: F821
-    favorites: List["Favorite"] = Relationship(back_populates="user")  # type: ignore[name-defined]  # noqa: F821
+    addresses: list["Address"] = Relationship(back_populates="user")  # type: ignore[name-defined]  # noqa: F821
+    orders: list["Order"] = Relationship(back_populates="user")  # type: ignore[name-defined]  # noqa: F821
+    favorites: list["Favorite"] = Relationship(back_populates="user")  # type: ignore[name-defined]  # noqa: F821
     cart: Optional["Cart"] = Relationship(back_populates="user")  # type: ignore[name-defined]  # noqa: F821

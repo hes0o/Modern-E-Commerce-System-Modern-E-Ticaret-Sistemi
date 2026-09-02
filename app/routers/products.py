@@ -1,4 +1,3 @@
-from typing import Optional, Union, Any
 from typing import Annotated
 
 from fastapi import APIRouter, Depends, Query, status
@@ -6,21 +5,22 @@ from sqlmodel import Session
 
 from app.core.dependencies import require_permission
 from app.database import get_session
+from app.models.enums import ProductStatus
 from app.models.user import User
 from app.schemas.common import ApiResponse
 from app.schemas.product import (
     ProductCreate,
+    ProductDetailResponse,
     ProductListResponse,
     ProductResponse,
-    ProductDetailResponse,
     ProductUpdate,
 )
 from app.services.product_service import (
+    archive_product,
     create_new_product,
     get_product,
     list_products,
     update_existing_product,
-    delete_product_permanently,
 )
 
 router = APIRouter(
@@ -32,8 +32,20 @@ router = APIRouter(
 def create_product_response(
     product: object,
     detail: bool = False,
-) -> Union[ProductResponse, ProductDetailResponse]:
+) -> ProductResponse | ProductDetailResponse:
     prod_dict = product.model_dump()
+    images = sorted(
+        getattr(product, "images", []),
+        key=lambda image: (
+            not image.is_cover,
+            image.sort_order,
+            image.id,
+        ),
+    )
+    prod_dict["images"] = [
+        image.model_dump()
+        for image in images
+    ]
     if getattr(product, "has_variants", False):
         variants = getattr(product, "variants", [])
         prod_dict["stock"] = sum(v.stock for v in variants if getattr(v, "stock", None) is not None)
@@ -58,15 +70,31 @@ def get_product_list(
     page: Annotated[int, Query(ge=1)] = 1,
     page_size: Annotated[int, Query(ge=1, le=100)] = 20,
     search: Annotated[
-        Optional[str],
+        str | None,
         Query(min_length=1, max_length=200),
     ] = None,
     category_id: Annotated[
-        Optional[int],
+        int | None,
         Query(gt=0),
     ] = None,
+    brand_id: Annotated[
+        int | None,
+        Query(gt=0),
+    ] = None,
+    price_min: Annotated[
+        float | None,
+        Query(ge=0),
+    ] = None,
+    price_max: Annotated[
+        float | None,
+        Query(ge=0),
+    ] = None,
+    sort_by: Annotated[
+        str | None,
+        Query(),
+    ] = None,
     status: Annotated[
-        Optional[str],
+        str | None,
         Query(),
     ] = None,
 ) -> ApiResponse[ProductListResponse]:
@@ -76,7 +104,11 @@ def get_product_list(
         page_size=page_size,
         search=search,
         category_id=category_id,
-        status=status,
+        status=ProductStatus.PUBLISHED,
+        brand_id=brand_id,
+        price_min=price_min,
+        price_max=price_max,
+        sort_by=sort_by,
     )
 
     return ApiResponse(
@@ -84,6 +116,92 @@ def get_product_list(
         data=result,
         message="Ürünler getirildi.",
     )
+
+@router.get(
+    "/admin",
+    response_model=ApiResponse[ProductListResponse],
+)
+def get_admin_product_list(
+    session: Annotated[Session, Depends(get_session)],
+    _admin_user: Annotated[
+        User,
+        Depends(require_permission("product.read")),
+    ],
+    page: Annotated[int, Query(ge=1)] = 1,
+    page_size: Annotated[int, Query(ge=1, le=100)] = 20,
+    search: Annotated[
+        str | None,
+        Query(min_length=1, max_length=200),
+    ] = None,
+    category_id: Annotated[
+        int | None,
+        Query(gt=0),
+    ] = None,
+    brand_id: Annotated[
+        int | None,
+        Query(gt=0),
+    ] = None,
+    price_min: Annotated[
+        float | None,
+        Query(ge=0),
+    ] = None,
+    price_max: Annotated[
+        float | None,
+        Query(ge=0),
+    ] = None,
+    sort_by: Annotated[
+        str | None,
+        Query(),
+    ] = None,
+    product_status: Annotated[
+        ProductStatus | None,
+        Query(alias="status"),
+    ] = None,
+) -> ApiResponse[ProductListResponse]:
+    result = list_products(
+        session,
+        page=page,
+        page_size=page_size,
+        search=search,
+        category_id=category_id,
+        status=product_status,
+        brand_id=brand_id,
+        price_min=price_min,
+        price_max=price_max,
+        sort_by=sort_by,
+    )
+
+    return ApiResponse(
+        success=True,
+        data=result,
+        message="Ürünler getirildi.",
+    )
+
+
+@router.get(
+    "/admin/{product_id}",
+    response_model=ApiResponse[ProductDetailResponse],
+)
+def get_admin_product_detail(
+    product_id: int,
+    session: Annotated[Session, Depends(get_session)],
+    _admin_user: Annotated[
+        User,
+        Depends(require_permission("product.read")),
+    ],
+) -> ApiResponse[ProductDetailResponse]:
+    product = get_product(
+        session,
+        product_id,
+        published_only=False,
+    )
+
+    return ApiResponse(
+        success=True,
+        data=create_product_response(product, detail=True),
+        message="Ürün getirildi.",
+    )
+
 
 
 @router.get(
@@ -97,7 +215,7 @@ def get_product_detail(
     product = get_product(
         session,
         product_id,
-        published_only=False,
+        published_only=True,
     )
 
     return ApiResponse(
@@ -170,7 +288,7 @@ def delete_product(
     Depends(require_permission("product.delete")),
     ],
 ) -> ApiResponse[ProductResponse]:
-    product = delete_product_permanently(
+    product = archive_product(
         session,
         product_id,
     )
@@ -178,5 +296,5 @@ def delete_product(
     return ApiResponse(
         success=True,
         data=create_product_response(product),
-        message="Ürün başarıyla silindi.",
+        message="Ürün başarıyla arşivlendi.",
     )

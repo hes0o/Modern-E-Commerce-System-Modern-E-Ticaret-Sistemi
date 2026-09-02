@@ -12,11 +12,11 @@ import enum
 class ProductStatus(str, enum.Enum):
     """Product lifecycle status (SRS §5.2)."""
 
-    ACTIVE = "ACTIVE"
-    INACTIVE = "INACTIVE"
-    DRAFT = "DRAFT"
-    PUBLISHED = "PUBLISHED"
-    ARCHIVED = "ARCHIVED"
+    ACTIVE = "active"
+    INACTIVE = "inactive"
+    DRAFT = "draft"
+    PUBLISHED = "published"
+    ARCHIVED = "archived"
 
 
 class PaymentMethod(str, enum.Enum):
