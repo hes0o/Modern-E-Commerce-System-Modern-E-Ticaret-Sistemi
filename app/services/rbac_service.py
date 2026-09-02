@@ -17,6 +17,7 @@ from app.schemas.rbac import (
     PermissionResponse,
     RolePermissionUpdate,
     RoleResponse,
+    RoleUpdate,
 )
 
 
@@ -40,6 +41,36 @@ def list_permissions(
         PermissionResponse.model_validate(permission)
         for permission in permissions
     ]
+
+
+def update_role(
+    session: Session,
+    *,
+    role_id: int,
+    payload: RoleUpdate,
+) -> RoleResponse:
+    role = get_role_with_permissions(
+        session,
+        role_id,
+    )
+
+    if role is None:
+        raise NotFoundError("Rol bulunamadı.")
+
+    if role.name in {"admin", "customer"}:
+        raise BusinessRuleError(
+            "Admin ve müşteri rollerinin adı değiştirilemez."
+        )
+
+    update_data = payload.model_dump(exclude_unset=True)
+
+    for field, value in update_data.items():
+        setattr(role, field, value)
+
+    role.updated_at = datetime.now(timezone.utc)
+    saved_role = save_role(session, role)
+
+    return RoleResponse.model_validate(saved_role)
 
 
 def update_role_permissions(

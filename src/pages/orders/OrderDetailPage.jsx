@@ -409,19 +409,30 @@ export default function OrderDetailPage() {
           </div>
 
           {/* Quick Status Change */}
+          {order.status !== 'completed' && order.status !== 'cancelled' && (
           <div className="card p-5 space-y-3">
             <h3 className="text-sm font-bold text-slate-800">Hızlı Durum Değişikliği</h3>
             <select
-              value={order.status}
+              value=""
               disabled={updating}
-              onChange={(e) => handleStatusChange(e.target.value)}
+              onChange={(e) => { if (e.target.value) handleStatusChange(e.target.value) }}
               className="select text-xs"
             >
-              {Object.entries(STATUS_CONFIG).map(([key, val]) => (
-                <option key={key} value={key}>{val.label}</option>
-              ))}
+              <option value="">{STATUS_CONFIG[order.status]?.label || order.status} — Değiştir…</option>
+              {(() => {
+                const TRANSITIONS = {
+                  pending: ['confirmed', 'cancelled'],
+                  confirmed: ['preparing', 'cancelled'],
+                  preparing: ['shipped', 'cancelled'],
+                  shipped: ['completed'],
+                }
+                return (TRANSITIONS[order.status] || []).map(key => (
+                  <option key={key} value={key}>{STATUS_CONFIG[key]?.label || key}</option>
+                ))
+              })()}
             </select>
           </div>
+          )}
         </div>
       </div>
 

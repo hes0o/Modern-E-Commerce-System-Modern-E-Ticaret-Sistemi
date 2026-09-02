@@ -2,15 +2,7 @@ import { useEffect, useState } from 'react'
 import { Link } from 'react-router-dom'
 import { Package, ChevronRight, AlertCircle } from 'lucide-react'
 import api from '@/services/api'
-
-const STATUS_STYLES = {
-  pending: 'bg-yellow-100 text-yellow-700',
-  confirmed: 'bg-blue-100 text-blue-700',
-  preparing: 'bg-orange-100 text-orange-700',
-  shipped: 'bg-indigo-100 text-indigo-700',
-  completed: 'bg-emerald-100 text-emerald-700',
-  cancelled: 'bg-red-100 text-red-700',
-}
+import Badge from '@/components/common/Badge'
 
 function formatPrice(p) {
   return new Intl.NumberFormat('tr-TR', { style: 'currency', currency: 'TRY' }).format(p || 0)
@@ -64,10 +56,8 @@ export default function OrderHistoryPage() {
                   </div>
                 </div>
                 <div className="flex items-center gap-3">
-                  <span className={`text-[11px] font-bold px-2.5 py-1 rounded-full capitalize ${STATUS_STYLES[order.status] || 'bg-gray-100 text-gray-600'}`}>
-                    {order.status}
-                  </span>
-                  <p className="text-sm font-black text-slate-900 whitespace-nowrap">{formatPrice(order.total_price || order.total)}</p>
+                  <Badge status={order.status} />
+                  <p className="text-sm font-black text-slate-900 whitespace-nowrap">{formatPrice(order.grand_total || order.total_price || order.total)}</p>
                   <ChevronRight size={15} className="text-gray-300" />
                 </div>
               </div>

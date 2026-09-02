@@ -3,6 +3,7 @@ import api from '@/services/api'
 import Badge from '@/components/common/Badge'
 import Modal from '@/components/common/Modal'
 import { Shield, Plus, Edit2 } from 'lucide-react'
+import toast from 'react-hot-toast'
 
 const PERM_TR = {
   view: 'Görüntüleme',
@@ -11,28 +12,36 @@ const PERM_TR = {
   delete: 'Silme',
   read: 'Görüntüleme',
   update: 'Düzenleme',
+  update_status: 'Durum Güncelleme',
+  update_tracking: 'Kargo Takip',
+  add_note: 'Not Ekleme',
+  assign_role: 'Rol Atama',
 }
 
 export default function RolesPage() {
   const [roles, setRoles] = useState([])
   const [permissions, setPermissions] = useState([])
   const [selectedRole, setSelectedRole] = useState(null)
-  const [isModalOpen, setIsModalOpen] = useState(false)
+  const [isCreateModalOpen, setIsCreateModalOpen] = useState(false)
+  const [isEditModalOpen, setIsEditModalOpen] = useState(false)
   const [newRoleName, setNewRoleName] = useState('')
   const [newRoleDesc, setNewRoleDesc] = useState('')
+  const [editRoleName, setEditRoleName] = useState('')
+  const [editRoleDesc, setEditRoleDesc] = useState('')
+  const [saving, setSaving] = useState(false)
   const [loading, setLoading] = useState(true)
 
   // Group permissions by module for the matrix view
   const permissionModules = {}
   permissions.forEach((p) => {
-    const [module, action] = (p.codename || '').split('.')
+    const [module, action] = (p.name || '').split('.')
     if (!permissionModules[module]) permissionModules[module] = []
     if (action && !permissionModules[module].includes(action)) {
       permissionModules[module].push(action)
     }
   })
   const modules = Object.keys(permissionModules)
-  const allActions = [...new Set(permissions.map((p) => (p.codename || '').split('.')[1]).filter(Boolean))]
+  const allActions = [...new Set(permissions.map((p) => (p.name || '').split('.')[1]).filter(Boolean))]
 
   const fetchData = async () => {
     try {
@@ -47,6 +56,10 @@ export default function RolesPage() {
       setPermissions(fetchedPerms)
       if (fetchedRoles.length > 0 && !selectedRole) {
         setSelectedRole(fetchedRoles[0])
+      } else if (selectedRole) {
+        // Refresh the selected role data after fetch
+        const updated = fetchedRoles.find((r) => r.id === selectedRole.id)
+        if (updated) setSelectedRole(updated)
       }
     } catch (err) {
       console.error('Failed to load roles/permissions:', err)
@@ -61,13 +74,13 @@ export default function RolesPage() {
 
   const roleHasPermission = (role, module, action) => {
     if (!role?.permissions) return false
-    const codename = `${module}.${action}`
-    return role.permissions.some((p) => (p.codename || p) === codename)
+    const permName = `${module}.${action}`
+    return role.permissions.some((p) => p.name === permName)
   }
 
   const handleTogglePermission = async (module, action) => {
     if (!selectedRole) return
-    const codename = `${module}.${action}`
+    const permName = `${module}.${action}`
     const has = roleHasPermission(selectedRole, module, action)
 
     // Build updated permission_ids list
@@ -75,21 +88,23 @@ export default function RolesPage() {
     let newPermIds
     if (has) {
       newPermIds = allPermsForRole
-        .filter((p) => (p.codename || p) !== codename)
-        .map((p) => p.id || p)
+        .filter((p) => p.name !== permName)
+        .map((p) => p.id)
     } else {
-      const permObj = permissions.find((p) => p.codename === codename)
+      const permObj = permissions.find((p) => p.name === permName)
       if (!permObj) return
-      newPermIds = [...allPermsForRole.map((p) => p.id || p), permObj.id]
+      newPermIds = [...allPermsForRole.map((p) => p.id), permObj.id]
     }
 
     try {
       await api.put(`/api/admin/rbac/roles/${selectedRole.id}/permissions`, {
         permission_ids: newPermIds,
       })
+      toast.success('İzin güncellendi.')
       fetchData()
     } catch (err) {
       console.error('Failed to update permissions:', err)
+      toast.error('İzin güncellenemedi.')
     }
   }
 
@@ -97,12 +112,41 @@ export default function RolesPage() {
     e.preventDefault()
     // Note: Backend may not have a create role endpoint yet
     // For now just close the modal
-    setIsModalOpen(false)
+    setIsCreateModalOpen(false)
+  }
+
+  const handleOpenEditModal = () => {
+    if (!selectedRole) return
+    setEditRoleName(selectedRole.name)
+    setEditRoleDesc(selectedRole.description || '')
+    setIsEditModalOpen(true)
+  }
+
+  const handleSaveRole = async (e) => {
+    e.preventDefault()
+    if (!selectedRole) return
+    setSaving(true)
+    try {
+      await api.patch(`/api/admin/rbac/roles/${selectedRole.id}`, {
+        name: editRoleName,
+        description: editRoleDesc,
+      })
+      toast.success('Rol güncellendi.')
+      setIsEditModalOpen(false)
+      fetchData()
+    } catch (err) {
+      const msg = err.response?.data?.message || 'Rol güncellenemedi.'
+      toast.error(msg)
+    } finally {
+      setSaving(false)
+    }
   }
 
   if (loading) {
     return <div className="p-8 text-center text-slate-400">Yükleniyor...</div>
   }
+
+  const isProtectedRole = selectedRole?.name === 'admin' || selectedRole?.name === 'customer'
 
   return (
     <div className="space-y-6">
@@ -112,7 +156,7 @@ export default function RolesPage() {
           <p className="page-subtitle">Modül bazlı yetkilendirmeleri ve erişim izinlerini ayarlayın.</p>
         </div>
 
-        <button onClick={() => setIsModalOpen(true)} className="btn btn-primary">
+        <button onClick={() => setIsCreateModalOpen(true)} className="btn btn-primary">
           <Plus size={16} /> Yeni Rol Oluştur
         </button>
       </div>
@@ -152,9 +196,14 @@ export default function RolesPage() {
                 </h2>
                 <p className="text-xs text-slate-400 mt-0.5">{selectedRole.description}</p>
               </div>
-              <button className="btn btn-secondary btn-sm flex items-center gap-1">
-                <Edit2 size={14} /> Rolü Düzenle
-              </button>
+              {!isProtectedRole && (
+                <button
+                  onClick={handleOpenEditModal}
+                  className="btn btn-secondary btn-sm flex items-center gap-1"
+                >
+                  <Edit2 size={14} /> Rolü Düzenle
+                </button>
+              )}
             </div>
 
             <div className="table-wrapper">
@@ -174,7 +223,7 @@ export default function RolesPage() {
                     <tr key={m}>
                       <td className="font-semibold text-slate-800 capitalize">{m}</td>
                       {allActions.map((a) => {
-                        const exists = permissions.some((p) => p.codename === `${m}.${a}`)
+                        const exists = permissions.some((p) => p.name === `${m}.${a}`)
                         if (!exists) return <td key={a} className="text-center text-slate-300">—</td>
                         const checked = roleHasPermission(selectedRole, m, a)
                         return (
@@ -197,13 +246,14 @@ export default function RolesPage() {
         )}
       </div>
 
+      {/* Create Role Modal */}
       <Modal
-        isOpen={isModalOpen}
-        onClose={() => setIsModalOpen(false)}
+        isOpen={isCreateModalOpen}
+        onClose={() => setIsCreateModalOpen(false)}
         title="Yeni Rol Oluştur"
         footer={
           <>
-            <button onClick={() => setIsModalOpen(false)} className="btn btn-secondary">
+            <button onClick={() => setIsCreateModalOpen(false)} className="btn btn-secondary">
               İptal
             </button>
             <button onClick={handleCreateRole} className="btn btn-primary">
@@ -232,6 +282,47 @@ export default function RolesPage() {
               onChange={(e) => setNewRoleDesc(e.target.value)}
               className="input"
               placeholder="Rol sorumlulukları..."
+            />
+          </div>
+        </form>
+      </Modal>
+
+      {/* Edit Role Modal */}
+      <Modal
+        isOpen={isEditModalOpen}
+        onClose={() => setIsEditModalOpen(false)}
+        title="Rolü Düzenle"
+        footer={
+          <>
+            <button onClick={() => setIsEditModalOpen(false)} className="btn btn-secondary">
+              İptal
+            </button>
+            <button onClick={handleSaveRole} disabled={saving} className="btn btn-primary">
+              {saving ? 'Kaydediliyor…' : 'Kaydet'}
+            </button>
+          </>
+        }
+      >
+        <form onSubmit={handleSaveRole} className="space-y-4">
+          <div>
+            <label className="label">Rol Adı *</label>
+            <input
+              type="text"
+              required
+              value={editRoleName}
+              onChange={(e) => setEditRoleName(e.target.value)}
+              className="input"
+              placeholder="Rol adı"
+            />
+          </div>
+          <div>
+            <label className="label">Açıklama</label>
+            <textarea
+              rows={3}
+              value={editRoleDesc}
+              onChange={(e) => setEditRoleDesc(e.target.value)}
+              className="input"
+              placeholder="Rol açıklaması..."
             />
           </div>
         </form>

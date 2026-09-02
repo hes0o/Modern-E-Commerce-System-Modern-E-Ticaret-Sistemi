@@ -29,3 +29,8 @@ class RolePermissionUpdate(BaseModel):
         min_length=0,
         max_length=100,
     )
+
+
+class RoleUpdate(BaseModel):
+    name: Optional[str] = Field(default=None, min_length=1, max_length=100)
+    description: Optional[str] = Field(default=None, max_length=255)

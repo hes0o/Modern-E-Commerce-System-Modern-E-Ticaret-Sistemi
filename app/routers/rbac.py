@@ -11,10 +11,12 @@ from app.schemas.rbac import (
     PermissionResponse,
     RolePermissionUpdate,
     RoleResponse,
+    RoleUpdate,
 )
 from app.services.rbac_service import (
     list_permissions,
     list_roles,
+    update_role,
     update_role_permissions,
 )
 
@@ -55,6 +57,29 @@ def permission_list(
         success=True,
         data=permissions,
         message="İzinler getirildi.",
+    )
+
+
+@router.patch(
+    "/roles/{role_id}",
+    response_model=ApiResponse[RoleResponse],
+)
+def update_role_details(
+    role_id: int,
+    payload: RoleUpdate,
+    session: Annotated[Session, Depends(get_session)],
+    _admin: Annotated[User, Depends(require_permission("user.assign_role"))],
+) -> ApiResponse[RoleResponse]:
+    role = update_role(
+        session,
+        role_id=role_id,
+        payload=payload,
+    )
+
+    return ApiResponse(
+        success=True,
+        data=role,
+        message="Rol güncellendi.",
     )
 
 
