@@ -22,7 +22,7 @@
 | `LOGIN_LOCK_MINUTES` | `15` | |
 | `APP_NAME`, `APP_VERSION`, `APP_ENV` | | Swagger'da görünür |
 | `EMAIL_ENABLED` | `false` | E-posta gönderimini açar |
-| `SMTP_HOST`, `SMTP_PORT`, `SMTP_USERNAME`, `SMTP_PASSWORD` | | Kod `SMTP_USERNAME` okur; `.env.example` hâlâ `SMTP_USER` yazıyor. |
+| `SMTP_HOST`, `SMTP_PORT`, `SMTP_USERNAME`, `SMTP_PASSWORD` | | |
 | `SMTP_FROM_EMAIL`, `SMTP_FROM_NAME`, `SMTP_USE_TLS` | | |
 
 Frontend (`package.json` yanında isteğe bağlı `.env`):
@@ -52,7 +52,7 @@ uv run python -m app.seeds        # roller, izinler, demo admin / personel / mü
 uv run python seed_products.py    # demo kategori, marka, ürün ve varyantlar
 ```
 
-İkisi de tekrar çalıştırılabilir: var olan kayıtları atlar. Demo giriş bilgileri `app/seeds/user_seed.py` içinde; herkese açık bir sunucuda bunları oluşturmayın.
+İkisi de tekrar çalıştırılabilir: var olan kayıtları atlar ve yenilerini ekler. İzin ekleyen değişiklikleri çektikten sonra mevcut rollerin bunları alması için `python -m app.seeds`'i yeniden çalıştırın. Demo giriş bilgileri `app/seeds/user_seed.py` içinde; herkese açık bir sunucuda bunları oluşturmayın.
 
 ## Çalıştırma
 
@@ -78,7 +78,7 @@ Testler varsayılan olarak SQLite (`./test.db`) kullanır. PostgreSQL'e karşı 
 | `test_customer_api.py` | Adresler, favoriler, sepet |
 | `test_order_api.py`, `test_order_transaction.py` | Checkout toplamları, stok düşme ve iade, misafir checkout, yetersiz stok, durum geçmişi |
 | `test_state_machine.py` | İzin verilen ve reddedilen sipariş geçişleri |
-| `test_rbac.py` | Seed edilen roller ve izinler, personel sınırları |
+| `test_rbac.py` | Seed edilen roller ve izinler, personel sınırları, router'ların istediği her iznin seed edilmesi |
 | `test_admin_api.py` | Role göre dashboard erişimi |
 | `test_audit_log.py` | Fiyat, durum ve rol değişiklikleri için denetim kayıtları |
 
@@ -105,4 +105,3 @@ Deploy etmeden önce:
 | İstekler `/api/api/...` adresine gidiyor | `VITE_API_BASE_URL` içinden `/api`'yi kaldırın. |
 | Tarayıcıda CORS hatası | 3000 veya 5173 portunu kullanın ya da origin'inizi `app/main.py`'ye ekleyin. |
 | Yönetim sayfasında `403` | Kullanıcının rolünde o izin yok. Roller sayfasından kontrol edin. |
-| `seed_customer.py` `app.models.role`'ü import edemiyor | O yardımcı script eski; yerine `python -m app.seeds` kullanın. |

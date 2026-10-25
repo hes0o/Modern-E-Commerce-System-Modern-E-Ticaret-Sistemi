@@ -60,6 +60,7 @@ PERMISSIONS = [
     {"name": "user.create", "description": "Create admin/personnel accounts"},
     {"name": "user.read", "description": "View admin/personnel list"},
     {"name": "user.update", "description": "Edit admin/personnel accounts"},
+    {"name": "user.delete", "description": "Delete admin/personnel accounts"},
     {"name": "user.assign_role", "description": "Assign roles to users"},
     # Notifications
     {"name": "notification.read", "description": "View panel notifications"},

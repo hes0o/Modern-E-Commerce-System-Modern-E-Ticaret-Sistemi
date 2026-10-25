@@ -152,7 +152,7 @@ Misafirler adres kimlikleri yerine `guest_name`, `guest_email`, `guest_phone` ve
 | GET | `/api/admin/dashboard` | `dashboard.read` |
 | GET · POST | `/api/admin/users` | `user.read` · `user.create` + `user.assign_role` |
 | GET · PATCH | `/api/admin/users/{user_id}` | `user.read` · `user.update` + `user.assign_role` |
-| DELETE | `/api/admin/users/{user_id}` | `user.delete` (seed'de yok, aşağıya bakın) |
+| DELETE | `/api/admin/users/{user_id}` | `user.delete` |
 | GET | `/api/admin/stock/products` | `stock.read` |
 | PATCH | `/api/admin/stock/products/{product_id}` | `stock.update` |
 | GET | `/api/admin/stock/movements` | `stock.read` |
@@ -183,7 +183,6 @@ Misafirler adres kimlikleri yerine `guest_name`, `guest_email`, `guest_phone` ve
 
 ## Bilinen eksikler
 
-- `DELETE /api/admin/users/{user_id}` `user.delete` izni ister, ancak `app/seeds/rbac_seed.py` bu izni oluşturmaz; seed'e eklenene kadar herkese `403` döner.
 - Şifremi unuttum / sıfırlama endpoint'leri henüz yok.
 - Ürünler slug yerine sayısal `product_id` ile getiriliyor.
 - Renk ve beden filtreleri henüz yok.

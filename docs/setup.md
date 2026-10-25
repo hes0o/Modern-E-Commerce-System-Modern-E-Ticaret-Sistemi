@@ -22,7 +22,7 @@ Copy `.env.example` to `.env`. The backend reads it with `python-dotenv`.
 | `LOGIN_LOCK_MINUTES` | `15` | |
 | `APP_NAME`, `APP_VERSION`, `APP_ENV` | | Shown in Swagger |
 | `EMAIL_ENABLED` | `false` | Turn on email sending |
-| `SMTP_HOST`, `SMTP_PORT`, `SMTP_USERNAME`, `SMTP_PASSWORD` | | The code reads `SMTP_USERNAME`; `.env.example` still says `SMTP_USER`. |
+| `SMTP_HOST`, `SMTP_PORT`, `SMTP_USERNAME`, `SMTP_PASSWORD` | | |
 | `SMTP_FROM_EMAIL`, `SMTP_FROM_NAME`, `SMTP_USE_TLS` | | |
 
 Frontend (optional `.env` next to `package.json`):
@@ -52,7 +52,7 @@ uv run python -m app.seeds        # roles, permissions, demo admin / personnel /
 uv run python seed_products.py    # demo categories, brands, products and variants
 ```
 
-Both are safe to re-run: they skip rows that already exist. Demo credentials are in `app/seeds/user_seed.py`; don't seed them on a public server.
+Both are safe to re-run: they skip rows that already exist and add anything new. Re-run `python -m app.seeds` after pulling changes that add permissions, so existing roles get them. Demo credentials are in `app/seeds/user_seed.py`; don't seed them on a public server.
 
 ## Run
 
@@ -78,7 +78,7 @@ Tests use SQLite (`./test.db`) by default. To run them against PostgreSQL, set `
 | `test_customer_api.py` | Addresses, favorites, cart |
 | `test_order_api.py`, `test_order_transaction.py` | Checkout totals, stock deduction and release, guest checkout, insufficient stock, status history |
 | `test_state_machine.py` | Allowed and rejected order transitions |
-| `test_rbac.py` | Seeded roles and permissions, personnel limits |
+| `test_rbac.py` | Seeded roles and permissions, personnel limits, every permission a router requires is seeded |
 | `test_admin_api.py` | Dashboard access by role |
 | `test_audit_log.py` | Audit entries for price, status and role changes |
 
@@ -105,4 +105,3 @@ Before deploying:
 | Requests go to `/api/api/...` | Remove `/api` from `VITE_API_BASE_URL`. |
 | Browser shows a CORS error | Use port 3000 or 5173, or add your origin in `app/main.py`. |
 | `403` on an admin page | The user's role lacks that permission. Check it under Roles. |
-| `seed_customer.py` fails to import `app.models.role` | That helper is stale; use `python -m app.seeds` instead. |

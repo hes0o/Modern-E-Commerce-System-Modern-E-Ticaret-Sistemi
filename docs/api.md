@@ -152,7 +152,7 @@ Guests send `guest_name`, `guest_email`, `guest_phone` and a full `shipping_addr
 | GET | `/api/admin/dashboard` | `dashboard.read` |
 | GET · POST | `/api/admin/users` | `user.read` · `user.create` + `user.assign_role` |
 | GET · PATCH | `/api/admin/users/{user_id}` | `user.read` · `user.update` + `user.assign_role` |
-| DELETE | `/api/admin/users/{user_id}` | `user.delete` (not seeded, see below) |
+| DELETE | `/api/admin/users/{user_id}` | `user.delete` |
 | GET | `/api/admin/stock/products` | `stock.read` |
 | PATCH | `/api/admin/stock/products/{product_id}` | `stock.update` |
 | GET | `/api/admin/stock/movements` | `stock.read` |
@@ -183,7 +183,6 @@ Where two permissions are joined with `+`, the user needs both.
 
 ## Known gaps
 
-- `DELETE /api/admin/users/{user_id}` requires `user.delete`, which `app/seeds/rbac_seed.py` does not create, so it returns `403` for everyone until that permission is added to the seed.
 - No forgot/reset password endpoints yet.
 - Products are fetched by numeric `product_id`, not by slug.
 - No color or size filters yet.

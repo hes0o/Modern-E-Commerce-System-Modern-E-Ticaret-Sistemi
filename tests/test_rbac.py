@@ -5,6 +5,9 @@ Verifies that roles, permissions, and mappings are correctly
 created and follow the role-yetki matrix from the SRS.
 """
 
+import re
+from pathlib import Path
+
 import pytest
 from sqlmodel import Session, select
 
@@ -104,7 +107,7 @@ class TestPermissionCoverage:
 
     def test_crud_modules_have_full_coverage(self):
         """Modules with CRUD operations should have create/read/update/delete."""
-        crud_modules = ["product", "category", "brand"]
+        crud_modules = ["product", "category", "brand", "user"]
         perm_names = {p["name"] for p in PERMISSIONS}
 
         for module in crud_modules:
@@ -121,3 +124,16 @@ class TestPermissionCoverage:
         """Personnel should NOT be able to assign roles (SRS §3.2)."""
         assert "user.assign_role" not in PERSONNEL_PERMISSIONS
         assert "user.create" not in PERSONNEL_PERMISSIONS
+        assert "user.delete" not in PERSONNEL_PERMISSIONS
+
+    def test_every_required_permission_is_seeded(self):
+        """Each require_permission(...) in the routers must name a seeded permission."""
+        routers = Path(__file__).resolve().parent.parent / "app" / "routers"
+        seeded = {p["name"] for p in PERMISSIONS}
+        required = set()
+        for router in routers.glob("*.py"):
+            for call in re.findall(r"require_permission\(([^)]*)\)", router.read_text()):
+                required.update(re.findall(r'"([a-z_]+\.[a-z_]+)"', call))
+
+        assert required, "no require_permission calls found"
+        assert required <= seeded, f"not seeded: {sorted(required - seeded)}"

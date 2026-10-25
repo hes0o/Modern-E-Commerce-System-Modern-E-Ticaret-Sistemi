@@ -1,7 +1,7 @@
 from sqlmodel import Session, select
 from app.database import engine
 from app.seeds.user_seed import seed_users
-from app.models.role import Role
+from app.models.rbac import Role
 
 with Session(engine) as session:
     roles = session.exec(select(Role)).all()
